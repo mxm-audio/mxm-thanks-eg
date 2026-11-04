@@ -29,6 +29,12 @@ mxm-preset.workspace = true
 mxm-tempo.workspace = true
 # The output meter and the developer channel's requests of the editor.
 mxm-telemetry.workspace = true
+# The editor: its window (`mxm-editor`), the collection's widgets, theme, paging and keyboard cursor
+# (`mxm-ui`), and the route rows' track minimum (`mxm-modulation-params`, its `ui` only).
+mxm-editor.workspace = true
+mxm-ui.workspace = true
+mxm-modulation-params.workspace = true
+egui.workspace = true
 
 [dev-dependencies]
 # The collection's shared headless checks: the VST3 class id and categories, the bundle's name, the
@@ -36,3 +42,10 @@ mxm-telemetry.workspace = true
 mxm-plugin-test.workspace = true
 # `control-map.json` read against the standard, as a host reads it.
 mxm-control-map.workspace = true
+# `wgpu` renders a frame to pixels for the layout-tree review pictures
+# (`mxm_plugin_test::tree_checks`, `editor::proof::tree_pictures`), and kittest drives the editor
+# through its accessibility tree. Test-only: nothing here reaches the bundle. Pinned as the lock has
+# them.
+egui_kittest = { version = "=0.36.1", features = ["wgpu"] }
+image = { version = "=0.25.9", default-features = false, features = ["png"] }
+kittest = "=0.4.0"

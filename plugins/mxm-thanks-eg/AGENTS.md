@@ -6,15 +6,19 @@ Parent: [`../../AGENTS.md`](../../AGENTS.md)
 
 The nice-plug shell, CLAP and VST3, over the instrument in `crates/mxm-thanks-eg-dsp` (its
 `src/lib.rs` is the interface): the 101 parameters, events, the realtime callback, state, the
-preset system's wiring and the control map. Ops' `plans/plan-mxm-thanks-eg.md` §5 is the design.
-**The editor is T4's** (`type Editor = ()` until then); everything it binds to is here.
+preset system's wiring, the control map and the editor. Ops' `plans/plan-mxm-thanks-eg.md` §5 is
+the design.
 
 # Ownership
 
 `Cargo.toml`, `control-map.json`, `presets/` and `src/`: `lib.rs` (identity, the `Plugin` impl,
 events, `process`), `params.rs` (the voice's 17, the envelopes' and LFOs' nested parameters, the
 `Settings` fill), `routes.rs` (the sixteen slots and their lists), `preset.rs` (`mxm_preset::Instrument`
-and the factory design), `telemetry.rs` (the atomics an editor reads). The DSP is the crate's.
+and the factory design), `telemetry.rs` (the atomics the editor reads), and the editor: `editor.rs`
+(the window, the app bar, paging, the developer Parameters list), `editor/cards.rs` (the cards as
+`mxm_ui::tree`s and every parameter's binding), `editor/route_rows.rs` (the slots as rows),
+`editor/binding.rs` (`mxm_params::binding`, re-exported) and `editor/proof.rs` (its tests). The DSP
+is the crate's.
 
 # Local Contracts
 
@@ -106,6 +110,37 @@ and the factory design), `telemetry.rs` (the atomics an editor reads). The DSP i
 - `telemetry::Telemetry` (shared through `MxmThanksEg::telemetry`): the peak meter, voices
   sounding, the tempo, and the developer channel's requests (CC 116–119 with `MXM_DEV_CC` set).
 
+## Editor ([NOTES.md § The editor](../../NOTES.md#the-editor))
+
+- **Twelve cards in the conventions' category order** (`cards::CARDS`): Voice (Performance);
+  Envelope 1–3 and LFO 1–3 (Modulators); Engine, Shaping, From decay (Generators); Low-pass gate,
+  Output (Tone). **Volume is the app bar's**, beside the meter (`editor::BAR_PARAMETER`,
+  `VOLUME_CARD`). Every control is the collection's, through `mxm_params::binding`; a painted name
+  drops what its card says (`cards::panel_of`: an envelope's faders read A, D, S, R), the
+  parameter's name stays the host's, the tooltip's and the accessibility tree's.
+- **A route slot is a row on the card of its target** (`Card::targets`: each of the 32 on one card,
+  the card of what it moves; `every_target_has_its_routes_on_exactly_one_card`), the drum machine's
+  shape: the target's line offers `‹ modulate ›`; a choice takes a free slot in one bracketed
+  gesture, one this target had first, so a source removed and added back keeps its depth, else
+  `Routes::first_free`, a depth left from another target zeroed (`route_rows::add`). A row is the
+  amount, painted as its source, and a remove that switches the source off, one write
+  (`route_rows::remove`). **A slot not in use is on no card.** With all sixteen in use every line
+  reads `route_rows::FULL`, disabled, and offers nothing.
+- **The engine picker** is the caret selector grouped by bank (`selector_grouped`); its hover says
+  what the chosen engine sounds like (`cards::engine_sound`), in the player's words.
+- **It opens on one page with every card**: `REFERENCE` is the budget hugged
+  (`the_opening_size_is_the_budget_hugged`), held a few points inside that check's gutter so the one
+  page has room (`the_window_opens_on_one_page_with_every_card`). **No preferred groups**: grouping
+  the envelopes and the LFOs splits that page in two. `MINIMUM` is the app bar's last compact step
+  (`the_app_bar_holds_in_the_minimum_window`).
+- Step laws: Frequency and Bend range `Semitones`, the rest their own. Every knob is Standard, so
+  each shows its reading; a synced Rate reads its division at the tempo in force.
+- CC 118 asks for an expander this editor has not got: taken, and nothing changes. CC 119's 127 is
+  the developer Parameters list, every parameter by its full name.
+- `editor/proof.rs` holds the tree checks in every state that changes a card, paging, reflow (rows,
+  floors, order), clipping, the keyboard cursor over every control and every slot, F1, BACK on a
+  drag, the slots' gestures, the developer channel, both themes, and the review pictures.
+
 # Work Guidance
 
 - Change `params.rs`, `routes.rs` or the design, then regenerate:
@@ -121,6 +156,9 @@ cargo test -p mxm-thanks-eg
 cargo clippy -p mxm-thanks-eg --all-targets -- -D warnings
 cargo xtask bundle mxm-thanks-eg --release
 clap-validator validate target/bundled/mxm-thanks-eg.clap
+# Every page, light and dark, at Init and with slots in use, for review:
+# target/layout-tree/mxm-thanks-eg/<MXM_PICTURES tag>/{init,routed}/
+MXM_PICTURES=after cargo test -p mxm-thanks-eg --lib tree_pictures -- --ignored
 ```
 
 `clap-validator` 0.4.1 fails `preset-discovery-crawl`, `-descriptor-consistency` and `-load` once the

@@ -2,12 +2,13 @@
 //! function generators too, three LFOs and sixteen route slots (ops' `plans/plan-mxm-thanks-eg.md`
 //! §5). The instrument is `mxm-thanks-eg-dsp`'s, behind the interface in its `src/lib.rs`; this
 //! crate owns the host's side of it: identity, the 101 parameters, events, the realtime callback,
-//! state, the preset system's wiring and the control map.
+//! state, the preset system's wiring, the control map and the editor.
 //!
 //! **Each process call**: the tempo is read and the patch filled into the DSP's `Settings` once;
 //! the buffer is split at every event and capped at [`MAX_BLOCK`] samples; for each piece the
 //! smoothed signals step on and the instrument renders it. An event takes effect at its own sample.
 
+pub mod editor;
 pub mod params;
 pub mod preset;
 pub mod routes;
@@ -269,12 +270,16 @@ impl Plugin for MxmThanksEg {
     const MIDI_INPUT: MidiConfig = MidiConfig::MidiCCs;
     const SAMPLE_ACCURATE_AUTOMATION: bool = false;
 
-    type Editor = ();
+    type Editor = editor::MxmThanksEgEditor;
     type SysExMessage = ();
     type BackgroundTask = ();
 
     fn params(&self) -> Arc<dyn Params> {
         self.params.clone()
+    }
+
+    fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Self::Editor> {
+        editor::create(self.params.clone(), self.telemetry.clone())
     }
 
     /// The host's rate goes to the instrument, which prepares its resampler (and may allocate:
@@ -420,6 +425,32 @@ mod identity {
             .to_lowercase();
         for word in ["plaits", "mutable", "maths", "make noise"] {
             assert!(!description.contains(word), "{word}");
+        }
+    }
+}
+
+/// What a player reads on hover in the editor speaks to the player about the sound, never about
+/// the module, the machine or the code (`mxm_plugin_test::hover_text`).
+#[cfg(test)]
+mod speaks_to_the_player {
+    #[test]
+    fn hover_text() {
+        mxm_plugin_test::hover_text::speaks_to_the_player(env!("CARGO_MANIFEST_DIR"));
+    }
+
+    /// Nor do they name the module this is a tribute to (root `AGENTS.md`, *The names*).
+    #[test]
+    fn no_editor_sentence_names_the_original() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let mut files = vec![dir.join("editor.rs")];
+        for entry in std::fs::read_dir(dir.join("editor")).unwrap().flatten() {
+            files.push(entry.path());
+        }
+        for file in files {
+            let text = std::fs::read_to_string(&file).unwrap().to_lowercase();
+            for word in ["plaits", "mutable", "maths", "make noise"] {
+                assert!(!text.contains(word), "{} names {word:?}", file.display());
+            }
         }
     }
 }
@@ -771,6 +802,34 @@ mod tests {
         };
         assert!(plugin.activate(&MxmThanksEg::AUDIO_IO_LAYOUTS[0], &config, &mut context));
         assert_eq!(plugin.telemetry.tempo.get(), None);
+    }
+
+    /// **The developer channel is off unless the environment asked for it**
+    /// (`docs/plugin-conventions.md`, *A developer channel in every editor*): without `MXM_DEV_CC`
+    /// CC 116–119 request nothing; with it, each is the editor's request, taken once.
+    #[test]
+    fn the_developer_channel_is_off_unless_the_environment_asked_for_it() {
+        let mut plugin = MxmThanksEg {
+            dev_cc: false,
+            ..Default::default()
+        };
+        for dev in [DEV_VIEW_CC, DEV_DISCLOSURE_CC, DEV_BROWSER_CC, DEV_THEME_CC] {
+            plugin.handle_event(cc(0, dev, 1.0));
+        }
+        assert_eq!(plugin.telemetry.dev.take_view(), None);
+        assert_eq!(plugin.telemetry.dev.take_disclosure(), None);
+        assert_eq!(plugin.telemetry.dev.take_browser(), None);
+        assert_eq!(plugin.telemetry.dev.take_theme(), None);
+
+        plugin.dev_cc = true;
+        plugin.handle_event(cc(0, DEV_VIEW_CC, 1.0 / 127.0));
+        plugin.handle_event(cc(0, DEV_DISCLOSURE_CC, 1.0));
+        plugin.handle_event(cc(0, DEV_BROWSER_CC, 0.0));
+        plugin.handle_event(cc(0, DEV_THEME_CC, 1.0 / 127.0));
+        assert_eq!(plugin.telemetry.dev.take_view(), Some(1));
+        assert_eq!(plugin.telemetry.dev.take_disclosure(), Some(true));
+        assert_eq!(plugin.telemetry.dev.take_browser(), Some(false));
+        assert_eq!(plugin.telemetry.dev.take_theme(), Some(1));
     }
 
     /// The layouts are stereo, then mono, with no input of any kind.

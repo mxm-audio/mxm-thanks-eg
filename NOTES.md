@@ -39,3 +39,36 @@ MATHS it was designed from, is ops' `plans/plan-mxm-thanks-eg.md`; Pi reviewed i
   from `libm`, so its bits are not the C++'s; run every voice at 48 kHz in blocks of 12, as the
   module, and resample, because the engines' constants and tables are written for 48 kHz; after
   version 1.0 of the collection.
+
+## The editor
+
+Built for T4 from the plan's §5.5 and the collection's two precedents: mxm-mono-pr1's editor for a
+synth's cards, the app bar, the preset row and its tests; mxm-drum-machine's for route slots drawn
+as rows under the control they move. No new widget: every control is `mxm-ui`'s, bound through
+`mxm_params::binding`, and the slots' rows are the drum machine's `route_stack` over this
+instrument's sixteen slots.
+
+- **Why each target sits on one card.** A slot can aim at any of 32 targets, so "under the knob it
+  moves" becomes "on the card of the control it moves": an envelope's six targets (Rise, Fall, Time,
+  Cycle, Trigger, Input) on its own card, an LFO's Rate on its own, the voice's on the cards that
+  hold those controls; Level, Pan and Amplitude, which have no knob, on the gate's and the output's.
+  A source is chosen there, never on a routing page of its own.
+- **Which free slot a choice takes.** The plan says the first free one; the drum machine takes one
+  already aimed at the knob first. Both hold: a slot this target had (its source removed) is taken
+  first, so a removed source added back finds its depth, as the remove's hover promises; otherwise
+  `Routes::first_free`. A slot taken from another target starts at zero depth, as the drum
+  machine's does.
+- **"Says so when all sixteen are in use."** The line's caret reads `all 16 in use`, disabled, where
+  it offered `modulate`, on every card at once: no free slot is a fact about the instrument, not one
+  card. It is measured with the line, and the row's track floor is wider still, so a full patch
+  changes no card's width.
+- **One page at the opening.** At the budget the pager first planned Voice alone and the other
+  eleven in two rows, because the envelopes and the LFOs were preferred groups and a group stays on
+  one row; the hugged window was then two pages with bare canvas under both. Without the groups all
+  twelve stand on one page, the LFOs reading on across the row break in their order. The derived
+  size leaves that page about a point of room, so `REFERENCE` is held a few points inside the
+  check's gutter.
+- **The review pictures forget the harness's first plan.** `tree_checks::pictures` draws its first
+  frame before the collection's fonts take effect and the pager keeps the plan it made in egui's
+  own (two pages); a window installs the fonts before its first frame. `tree_pictures` clears that
+  plan in its setup, so the pictures show what a window opens on.
