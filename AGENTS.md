@@ -12,8 +12,9 @@ ported to Rust from Emilie Gillet's MIT code and named as a tribute to her (the 
 2026-11-04). Eight voices, each a whole Plaits voice; three envelopes that are function
 generators after Make Noise's MATHS too; three LFOs; sixteen route slots; 101 parameters.
 
-Pre-alpha: T0 (this repository) and T1 (the research and the reference harness) are done; T2 (the
-port) is under way, engine by engine, with the bare plugin. Private until it is ready; after
+Pre-alpha: T0 (this repository), T1 (the research and the reference harness) and T2 (the port:
+all 24 engines, all 220 cases bit for bit, and the bare plugin) are done; T3 (the instrument) is
+next. Private until it is ready; after
 version 1.0 of the MXM collection.
 
 # Ownership
