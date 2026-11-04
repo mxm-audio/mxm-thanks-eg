@@ -12,8 +12,8 @@ ported to Rust from Emilie Gillet's MIT code and named as a tribute to her (the 
 2026-11-04). Eight voices, each a whole Plaits voice; three envelopes that are function
 generators after Make Noise's MATHS too; three LFOs; sixteen route slots; 101 parameters.
 
-Pre-alpha: T0 (this repository) is done and T1 (the research and the reference harness) is under
-way; no code yet. Private until it is ready; after version 1.0 of the MXM collection.
+Pre-alpha: T0 (this repository) and T1 (the research and the reference harness) are done; no code
+yet. Private until it is ready; after version 1.0 of the MXM collection.
 
 # Ownership
 
@@ -40,10 +40,13 @@ harness's cases and its outputs' SHA-256s.
   Rust's differ passes at most one step of a frame apart, and names the call.
 - **The one change from the C++ is the rate**: `kCorrectedSampleRate` takes 48 000 where the module
   takes its DAC's 47 872.34 Hz, which moves `a0` (every engine's pitch, 4.6 cents), the six-op
-  engines' rate and the LPC speech's frame rate to where the module meant them. The harness makes
+  engines' own pitch, envelopes and LFO, and the LPC speech's pitch to where the module meant them. The harness makes
   the same change; its README lists its two compiler workarounds, which change nothing.
-- **Each voice has its own random stream**, seeded as the C++ seeds its one static `Random`, so a
-  one-voice case matches.
+- **Each voice has its own random stream**, starting where the C++'s one static `Random` starts
+  (`0x21`), so a one-voice case matches.
+- **Flush-to-zero is on**: the plugin takes nice-plug's `unsafe_flush_denormals`, and the harness
+  sets the same bit, so the reference is what ships. The DSP adds no denormal guard of its own,
+  which would change its bits.
 - **The tables are made by a Rust generator** ported from `plaits/resources/*.py`, each equal to
   `plaits/resources.cc`'s.
 - **Plaits' data ships as Plaits has it**: the speech words, the six-op patches, the wavetables
