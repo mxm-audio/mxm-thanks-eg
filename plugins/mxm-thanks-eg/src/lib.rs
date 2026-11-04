@@ -99,28 +99,18 @@ impl MxmThanksEg {
                 let held = &mut self.held[usize::from(key)];
                 *held = held.saturating_sub(1);
             }
-            // A key-less note-off names a note by its id, or every note: offer it to each held key.
-            None => {
-                for (key, held) in self.held.iter_mut().enumerate() {
-                    if *held > 0 {
-                        self.instrument.note_off(key as u8, voice_id.id());
-                        if voice_id.is_wildcard() {
-                            *held = 0;
-                        }
-                    }
-                }
-            }
+            // A key-less note-off names a note by its id, or, as a wildcard, every note.
+            None => match voice_id.id() {
+                Some(id) if !voice_id.is_wildcard() => self.instrument.note_off_id(id),
+                _ => self.all_notes_off(),
+            },
         }
     }
 
     /// CC 123: every held key let go, the tails left to ring.
     fn all_notes_off(&mut self) {
-        for (key, held) in self.held.iter_mut().enumerate() {
-            if *held > 0 {
-                self.instrument.note_off(key as u8, None);
-                *held = 0;
-            }
-        }
+        self.instrument.release_all();
+        self.held = [0; KEYS];
     }
 
     fn handle_event(&mut self, event: NoteEvent<()>) {
@@ -140,14 +130,17 @@ impl MxmThanksEg {
             }
             NoteEvent::NoteOff { voice_id, key, .. } => self.note_off(key, voice_id),
             // A wildcard key is every note.
-            NoteEvent::Choke { key, .. } => {
-                let key = key.number();
-                self.instrument.choke(key);
-                match key {
-                    Some(key) => self.held[usize::from(key)] = 0,
-                    None => self.held = [0; KEYS],
+            NoteEvent::Choke { key, voice_id, .. } => match (key.number(), voice_id.id()) {
+                (Some(key), _) => {
+                    self.instrument.choke(Some(key));
+                    self.held[usize::from(key)] = 0;
                 }
-            }
+                (None, Some(id)) if !voice_id.is_wildcard() => self.instrument.choke_id(id),
+                (None, _) => {
+                    self.instrument.choke(None);
+                    self.held = [0; KEYS];
+                }
+            },
             // Per-note pitch, in semitones, routed by its note; a non-finite one is dropped.
             NoteEvent::PolyTuning {
                 voice_id,
@@ -155,6 +148,14 @@ impl MxmThanksEg {
                 tuning,
                 ..
             } if tuning.is_finite() => self.instrument.set_tuning(key, voice_id.id(), tuning),
+            // One that names only a note id goes to the voice playing it.
+            NoteEvent::PolyTuning {
+                voice_id, tuning, ..
+            } if tuning.is_finite() && !voice_id.is_wildcard() => {
+                if let Some(id) = voice_id.id() {
+                    self.instrument.set_tuning_id(id, tuning);
+                }
+            }
             NoteEvent::MidiPitchBend { value, .. } if value.is_finite() => {
                 self.instrument
                     .set_bend(((value - 0.5) * 2.0).clamp(-1.0, 1.0));
@@ -229,16 +230,17 @@ impl MxmThanksEg {
         self.telemetry.publish(self.instrument.telemetry());
     }
 
-    /// **Sounding keeps the host processing; silence lets it sleep.** No tail length is honest
-    /// here: a cycling envelope in Gate mode, or an LFO on Level, sounds with no key held for as
-    /// long as it is set. So `KeepAlive` while the instrument says any voice sounds, and `Normal`
-    /// (continue while not quiet) once every voice is idle, when the output is exact zero and the
-    /// instrument renders nothing.
+    /// **Sounding keeps the host processing; silence lets it sleep.** While a key is held, an
+    /// envelope cycles in Gate mode or a note waits, the instrument can't say how long it will
+    /// sound (`tail_samples` is `u32::MAX`), so `KeepAlive`; otherwise the tail it counts; and
+    /// `Normal` once every voice is idle, when the output is exact zero.
     fn status(&self) -> ProcessStatus {
-        if self.instrument.is_sounding() {
-            ProcessStatus::KeepAlive
-        } else {
-            ProcessStatus::Normal
+        if !self.instrument.is_sounding() {
+            return ProcessStatus::Normal;
+        }
+        match self.instrument.tail_samples() {
+            u32::MAX => ProcessStatus::KeepAlive,
+            samples => ProcessStatus::Tail(samples),
         }
     }
 }
@@ -741,15 +743,19 @@ mod tests {
         assert_eq!(plugin.held[70], 0);
     }
 
-    /// **The status is the instrument's**: `KeepAlive` while it sounds, `Normal` once silent.
+    /// **The status is the instrument's**: `Normal` once silent, otherwise its tail, or
+    /// `KeepAlive` while it can't count one.
     #[test]
     fn the_status_follows_the_instrument() {
         let (mut plugin, _) = activated(48_000.0);
         let (_, status) = process(&mut plugin, 2, 64, [], None);
-        let expected = if plugin.instrument.is_sounding() {
-            ProcessStatus::KeepAlive
-        } else {
+        let expected = if !plugin.instrument.is_sounding() {
             ProcessStatus::Normal
+        } else {
+            match plugin.instrument.tail_samples() {
+                u32::MAX => ProcessStatus::KeepAlive,
+                samples => ProcessStatus::Tail(samples),
+            }
         };
         assert_eq!(status, expected);
     }
