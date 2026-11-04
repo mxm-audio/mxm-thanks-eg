@@ -97,7 +97,9 @@ clap-validator validate target/bundled/mxm-thanks-eg.clap
 
 `clap-validator` 0.4.1 on Windows fails `preset-discovery-crawl`, `-descriptor-consistency` and
 `-load` on every MXM plugin with installed presets: the preset provider gives a `C:\…` path and
-the validator takes only `/…` (2026-11-04, the board's message 436). Every other test passes.
+the validator takes only `/…` (its `src/plugin/preset_discovery/indexer.rs:178`, on `master` too),
+a Unix-only check no absolute Windows path can pass (2026-11-04, the board's message 436). Every
+other test passes, in debug and in release.
 
 The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-engines/tests/`.
 
