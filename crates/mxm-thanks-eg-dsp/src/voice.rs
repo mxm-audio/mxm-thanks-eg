@@ -510,11 +510,13 @@ impl Voice {
         Some(envelopes + gate + (QUIET_BLOCKS + SILENT_BLOCKS) as f32 * DT)
     }
 
+    /// Every envelope a slot reads is still: at rest, or in Follow mode holding its input's level
+    /// (one following Key never rests, and its voice must still be freed once silent).
     fn envelopes_at_rest(&self, r: &Routing) -> bool {
         self.envelopes
             .iter()
             .enumerate()
-            .all(|(e, env)| env.at_rest() || !Source::envelope(e).iter().any(|&s| r.reads(s)))
+            .all(|(e, env)| env.still() || !Source::envelope(e).iter().any(|&s| r.reads(s)))
     }
 }
 

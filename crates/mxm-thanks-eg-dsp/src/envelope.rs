@@ -143,6 +143,8 @@ pub(crate) struct Envelope {
     /// The attack was started by the Trigger target in Note mode: it completes whatever the
     /// note's gate does, as MATHS' rise ignores the gate's length.
     latched: bool,
+    /// Follow mode, at its input and not moving: as still as rest, for the voice's idling.
+    settled: bool,
     value: f32,
 }
 
@@ -160,6 +162,7 @@ impl Envelope {
             eor: false,
             trigger_high: false,
             latched: false,
+            settled: false,
             value: 0.0,
         }
     }
@@ -184,6 +187,13 @@ impl Envelope {
     #[inline]
     pub(crate) fn at_rest(&self) -> bool {
         self.stage == Stage::Rest
+    }
+
+    /// At rest, or in Follow mode holding its input's level: nothing in it will move until its
+    /// input does. A voice may go idle on it; whether it still sounds is the voice's to hear.
+    #[inline]
+    pub(crate) fn still(&self) -> bool {
+        self.at_rest() || self.settled
     }
 
     #[cfg(test)]
@@ -216,6 +226,7 @@ impl Envelope {
         if settings.mode == EnvelopeMode::Follow {
             self.follow(curve, &times, inputs.input, dt);
         } else {
+            self.settled = false;
             self.function(settings, curve, &times, inputs, trigger, edge, dt);
         }
         self.value = curve.shape(self.x);
@@ -342,6 +353,7 @@ impl Envelope {
             self.eor = false;
             self.stage = Stage::Rest;
         }
+        self.settled = self.x == target;
     }
 }
 
@@ -642,6 +654,30 @@ mod tests {
         assert!((seconds(rest) - 0.08).abs() <= ROUNDING);
         assert!(!env.end_of_rise());
         assert_eq!(env.value(), 0.0);
+    }
+
+    /// **A Follow envelope holding a level is still, though not at rest**: following a constant
+    /// above zero (Key above middle C, after the note is released), it never reaches rest, and a
+    /// voice waiting for rest was never freed. Still is what the voice's idling asks.
+    #[test]
+    fn a_follow_envelope_holding_a_level_is_still() {
+        let s = settings(EnvelopeMode::Follow);
+        let mut env = Envelope::new();
+        let held = Inputs {
+            input: 0.6,
+            ..Inputs::default()
+        };
+        env.process(&s, &held, DT);
+        assert!(!env.still(), "moving toward its input");
+        blocks_until(&mut env, &s, &held, 10_000, |e| e.value() >= 0.6).unwrap();
+        env.process(&s, &held, DT);
+        assert!(env.still() && !env.at_rest());
+        let moved = Inputs {
+            input: 0.3,
+            ..Inputs::default()
+        };
+        env.process(&s, &moved, DT);
+        assert!(!env.still(), "its input moved, so it does");
     }
 
     /// The Time target divides every time by 2^octaves (four octaves at full), positive
