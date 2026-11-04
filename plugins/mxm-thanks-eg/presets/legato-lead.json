@@ -126,8 +126,8 @@
       "text": "50 %"
     },
     "lfo1_fade": {
-      "v": 0.0,
-      "text": "0.0 ms"
+      "v": 0.4472136,
+      "text": "400.0 ms"
     },
     "lfo1_rate": {
       "v": 0.562088,
@@ -286,8 +286,8 @@
       "text": "Off"
     },
     "route1_amount": {
-      "v": 1.0,
-      "text": "100 %"
+      "v": 0.7,
+      "text": "40 %"
     },
     "route1_source": {
       "v": 0.05263158,
@@ -310,16 +310,16 @@
       "text": "Pitch"
     },
     "route3_amount": {
-      "v": 0.5,
-      "text": "0 %"
+      "v": 0.7,
+      "text": "40 %"
     },
     "route3_source": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.84210527,
+      "text": "Wheel"
     },
     "route3_target": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.125,
+      "text": "Morph"
     },
     "route4_amount": {
       "v": 0.5,

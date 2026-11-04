@@ -18,8 +18,8 @@
       "text": "50 %"
     },
     "decay": {
-      "v": 0.7,
-      "text": "70 %"
+      "v": 0.5,
+      "text": "50 %"
     },
     "env1_attack": {
       "v": 0.11066865,
@@ -194,8 +194,8 @@
       "text": "Modal resonator"
     },
     "morph": {
-      "v": 0.4,
-      "text": "40 %"
+      "v": 0.6,
+      "text": "60 %"
     },
     "morph_amount": {
       "v": 0.5,
@@ -398,8 +398,8 @@
       "text": "0 %"
     },
     "timbre": {
-      "v": 0.6,
-      "text": "60 %"
+      "v": 0.8,
+      "text": "80 %"
     },
     "timbre_amount": {
       "v": 0.5,

@@ -286,16 +286,16 @@
       "text": "Off"
     },
     "route1_amount": {
-      "v": 0.5,
-      "text": "0 %"
+      "v": 0.65,
+      "text": "30 %"
     },
     "route1_source": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.7894737,
+      "text": "Velocity"
     },
     "route1_target": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.09375,
+      "text": "Timbre"
     },
     "route2_amount": {
       "v": 0.5,

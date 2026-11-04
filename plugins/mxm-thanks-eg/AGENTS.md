@@ -11,14 +11,14 @@ the design.
 
 # Ownership
 
-`Cargo.toml`, `control-map.json`, `presets/` and `src/`: `lib.rs` (identity, the `Plugin` impl,
-events, `process`), `params.rs` (the voice's 17, the envelopes' and LFOs' nested parameters, the
-`Settings` fill), `routes.rs` (the sixteen slots and their lists), `preset.rs` (`mxm_preset::Instrument`
-and the factory design), `telemetry.rs` (the atomics the editor reads), and the editor: `editor.rs`
-(the window, the app bar, paging, the developer Parameters list), `editor/cards.rs` (the cards as
-`mxm_ui::tree`s and every parameter's binding), `editor/route_rows.rs` (the slots as rows),
-`editor/binding.rs` (`mxm_params::binding`, re-exported) and `editor/proof.rs` (its tests). The DSP
-is the crate's.
+`Cargo.toml`, `control-map.json`, `presets/`, `tests/` (the factory set's levels), `host-tests/`
+(the slow tier) and `src/`: `lib.rs` (identity, the `Plugin` impl, events, `process`), `params.rs`
+(the voice's 17, the envelopes' and LFOs' nested parameters, the `Settings` fill), `routes.rs`
+(the sixteen slots and their lists), `preset.rs` (`mxm_preset::Instrument` and the factory design),
+`telemetry.rs` (the atomics the editor reads), and the editor: `editor.rs` (the window, the app
+bar, paging, the developer Parameters list), `editor/cards.rs` (the cards as `mxm_ui::tree`s and
+every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/binding.rs`
+(`mxm_params::binding`, re-exported) and `editor/proof.rs` (its tests). The DSP is the crate's.
 
 # Local Contracts
 
@@ -102,8 +102,16 @@ is the crate's.
   `CLAP_PRESETS` and `preset_loader` let a host list and load the files. The design is
   `preset::tests::design`, overrides on Init in each parameter's own units; the ignored
   `write_the_factory_presets` writes the files and `order.txt`, and `the_shipped_files_are_the_design`
-  fails when they differ. Each sound has a category; every bank of engines has one
-  (`every_bank_has_a_sound`). **Nine drafts: the fifty, and their listening, are owed (T4).**
+  fails when they differ. At least fifty (`the_set_is_at_least_fifty_sounds`), each with its
+  category, every engine with one (`every_engine_and_bank_has_a_sound`), names short, sentence case
+  and the set's own (`every_name_is_its_own_short_and_in_sentence_case`); the order a first
+  impression, then `Category::ALL`'s. **Their listening is owed (T4).**
+- **The set's levels are `tests/factory_levels.rs`**: each file loaded as a host loads it, played
+  as its category is (at 120 bpm), its BS.1770 momentary loudness at its loudest within `WINDOW_LU`
+  of the set's median, no sample past full scale, and silent within `ENDS_WITHIN` of its key going
+  up. **Balanced in the sound, never by Volume** (`factory_content_does_not_move_volume`): a small
+  Level amount at Colour 1 for a sound through the gate; for an engine that envelopes itself, its
+  knobs and its accent (`Sound::struck`).
 - `control-map.json` claims only matching roles (its `_comment` says why each; held by
   `control_map::the_map_holds_to_the_standard_and_names_real_parameters`). No route amount is
   claimed: a slot moves with its routing.
@@ -145,14 +153,23 @@ is the crate's.
 
 - Change `params.rs`, `routes.rs` or the design, then regenerate:
   `cargo test -p mxm-thanks-eg --lib write_the_factory_presets -- --ignored`.
-- The DSP is a stub until its branch merges: no test here depends on sound.
+- The level test is the one here that depends on sound; `-- --nocapture` prints each sound's
+  loudness, peak and ring.
+- **Designing a sound, the gotchas**: Level reaches the gate through the module's compression
+  (`1.3L/(0.3+L)`, so −6 dB is about 0.19) and darkens it unless Colour is 1, where it is a plain
+  VCA. An engine that envelopes itself (the six-op, the chiptune, the string, the modal, the drums,
+  speech's words) bypasses the gate: Level is only its accent, and it ignores the key going up, so
+  the string and the modal ring as long as Morph says (from about 0.7 to the 30 s guard) unless a
+  slot damps them (Envelope 1 into Morph). A Follow envelope whose input stays above zero after
+  the note (Key above middle C) never rests, and the voice then never idles, guard or not: take
+  the input away with another envelope's end of cycle.
 - `cargo xtask bundle mxm-thanks-eg --release` makes the `.clap` and `.vst3` and installs them;
   `MXM_CLAP_DIR` and `MXM_VST3_DIR` send a debug bundle elsewhere.
 
 # Verification
 
 ```bash
-cargo test -p mxm-thanks-eg
+cargo test -p mxm-thanks-eg     # with tests/factory_levels.rs, the set's loudness
 cargo clippy -p mxm-thanks-eg --all-targets -- -D warnings
 cargo xtask bundle mxm-thanks-eg --release
 clap-validator validate target/bundled/mxm-thanks-eg.clap
