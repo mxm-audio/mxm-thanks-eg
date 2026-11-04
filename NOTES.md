@@ -72,3 +72,39 @@ instrument's sixteen slots.
   frame before the collection's fonts take effect and the pager keeps the plan it made in egui's
   own (two pages); a window installs the fonts before its first frame. `tree_pictures` clears that
   plan in its setup, so the pictures show what a window opens on.
+
+## The instrument's choices, for the owner to hear (T5)
+
+Where the plan left a choice open, T3 made one; each is the owner's to keep or change by ear.
+
+- **The envelopes' Response curve** is `(e^(6r·x) − 1) / (e^(6r) − 1)`, *r* the Response from −1 to
+  +1: linear at 0, and it does not change the times. Times run 0.5 ms to 30 s on each knob.
+- **Rise and Fall**, MATHS' linear CV, reach the whole range: 1 % of an amount moves a time by about
+  0.3 s, coarse for fine work; Time (exponential, ×/÷ 16) is the one for small moves.
+- **Glide** is exponential; in Poly a new note glides from the last note played.
+- **Pan** is a balance law, unity at the centre in both channels; **Spread** crossfades the Aux mix
+  toward OUT left, AUX right.
+- **Smooth random** glides by a raised cosine to a new point each cycle.
+- **Aux, Spread and Volume** are smoothed over 5 ms; the engines' own controls are not (the module
+  interpolates them inside each block).
+- **A voice goes idle**, and is no longer rendered, once its gate's gain is below 10⁻⁶; one whose
+  engine bypasses the gate, after 128 ms within one step of silence. The plan's first rule, one
+  silent block, failed three ways: zero crossings in quiet tails, the six-op engines' never-silent
+  residue, and the particle engine's gaps while its gate is open.
+
+## Open points
+
+- **The chiptune engine drones after release** with its Timbre attenuverter at noon, as the module
+  does, and no slot can close it; the instrument fades a released note out 30 s after its key went
+  up. A guard, not a design: the owner rules what it should be.
+- **Level does nothing on the eight engines that make their own envelope** (the six-op engines, the
+  string, the modal resonator, the drums), so on those the only level a slot reaches is Amplitude,
+  which can only trim (×0…×2): no slot-driven VCA there.
+- **Plaits does not clamp Gate decay and Colour**; the instrument clamps them to 0…1.
+- **A shared LFO's Rate** (Retrigger off) can only follow shared sources: Wheel, Pressure, Bend and
+  the other shared LFOs.
+- **"Env n input"** names the Follow mode's target as the plan and the DSP do, though the
+  conventions say a target is never called *Input*: for the freeze (T5).
+- **Copies the kit could hold**: the time reading is a second copy of mxm-mono-pr1's, the route
+  slots a third copy of the drums' shape, and the resampler is this instrument's until MXM Step
+  Sampler needs one. Moving any into mxm-kit needs the owner's word to push it.

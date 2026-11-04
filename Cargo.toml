@@ -4,6 +4,15 @@ members = [
     "crates/mxm-thanks-eg-engines",
     "crates/mxm-thanks-eg-dsp",
     "plugins/mxm-thanks-eg",
+    "plugins/mxm-thanks-eg/host-tests",
+    "xtask",
+]
+# The fast tier: `cargo build` and `cargo test` here never build MXM Player; `cargo test
+# --workspace` adds the host tests (the slow tier).
+default-members = [
+    "crates/mxm-thanks-eg-engines",
+    "crates/mxm-thanks-eg-dsp",
+    "plugins/mxm-thanks-eg",
     "xtask",
 ]
 

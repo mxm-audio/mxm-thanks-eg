@@ -12,19 +12,20 @@ ported to Rust from Emilie Gillet's MIT code and named as a tribute to her (the 
 2026-11-04). Eight voices, each a whole Plaits voice; three envelopes that are function
 generators after Make Noise's MATHS too; three LFOs; sixteen route slots; 101 parameters.
 
-Pre-alpha: T0 (this repository), T1 (the research and the reference harness) and T2 (the port:
-all 24 engines, all 220 cases bit for bit, and the bare plugin) are done; T3 (the instrument) is
-next. Private until it is ready; after
-version 1.0 of the MXM collection.
+Pre-alpha: T0 to T4 are done (2026-11-04): the port, all 24 engines and all 220 cases bit for bit;
+the instrument; the editor, the factory sounds, the control map and the host tests. T5 is the
+owner's: listening, then the freeze. Private until it is ready; after version 1.0 of the MXM
+collection.
 
 # Ownership
 
 Root owns `AGENTS.md`, `NOTES.md`, `README.md`, `NOTICE.md`, `LICENSE`, `TRADEMARKS.md`,
 `CONTRIBUTING.md`, `Cargo.toml`, `Cargo.lock`, `bundler.toml`, `.cargo/config.toml` (the `xtask`
 alias), `.gitignore` and `.gitattributes`, and `xtask/` (the collection's shared `mxm-xtask`:
-`bundle`). `crates/mxm-thanks-eg-engines` (the port) and `plugins/mxm-thanks-eg` (the shell) have
-their own `AGENTS.md`; `crates/mxm-thanks-eg-dsp` (voices, envelopes, LFOs, the slots' routing)
-comes with T3.
+`bundle`), and `docs/briefs/mxm-thanks-eg.md` (the design system's §14 brief).
+`crates/mxm-thanks-eg-engines` (the port), `crates/mxm-thanks-eg-dsp` (the instrument: voices,
+envelopes, LFOs, the slots' routing, the resampler) and `plugins/mxm-thanks-eg` (the shell and
+editor, with `host-tests/`, the slow tier) have their own `AGENTS.md`.
 
 The reference harness, the C++ it builds and the research pages are in the private research
 repository (`research:sources/mutable-instruments-plaits/`, its harness in `derived/harness/`;
@@ -88,8 +89,15 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace     # the engines' reference cases, bit for bit; the plugin's parameters, presets and map
+cargo test                 # the fast tier: the engines' cases bit for bit, the instrument, the plugin
+cargo xtask bundle mxm-thanks-eg --release
+cargo test -p mxm-thanks-eg-host-tests      # the slow tier: the release bundle in MXM Player
+clap-validator validate target/bundled/mxm-thanks-eg.clap
 ```
+
+`clap-validator` 0.4.1 on Windows fails `preset-discovery-crawl`, `-descriptor-consistency` and
+`-load` on every MXM plugin with installed presets: the preset provider gives a `C:\…` path and
+the validator takes only `/…` (2026-11-04, the board's message 436). Every other test passes.
 
 The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-engines/tests/`.
 
@@ -98,4 +106,5 @@ The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-en
 | Doc | Scope |
 |---|---|
 | [`crates/mxm-thanks-eg-engines/AGENTS.md`](crates/mxm-thanks-eg-engines/AGENTS.md) | The port: the porting contract, the bits, the arena, the reference cases |
+| [`crates/mxm-thanks-eg-dsp/AGENTS.md`](crates/mxm-thanks-eg-dsp/AGENTS.md) | The instrument: the interface with the plugin, the voices, the envelopes with MATHS' functions, the LFOs, the routing, the resampler |
 | [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: the 101 parameters and the slots' lists, events and the callback, Init and the presets, the control map, and the editor: its twelve cards, the slots as rows on their targets' cards |
