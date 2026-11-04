@@ -47,8 +47,9 @@ harness's cases and its outputs' SHA-256s.
 - **Flush-to-zero is on**: the plugin takes nice-plug's `unsafe_flush_denormals`, and the harness
   sets the same bit, so the reference is what ships. The DSP adds no denormal guard of its own,
   which would change its bits.
-- **The tables are made by a Rust generator** ported from `plaits/resources/*.py`, each equal to
-  `plaits/resources.cc`'s.
+- **The tables are Plaits' own values**, converted from `plaits/resources.cc` (and the speech
+  words' file) by `crates/mxm-thanks-eg-engines/gen/tables.py`, bit for bit; never regenerated from
+  the Python scripts that made them, whose numpy arithmetic a port could only approximate.
 - **Plaits' data ships as Plaits has it**: the speech words, the six-op patches, the wavetables
   (the owner, 2026-11-04: *"The words and patches MUST be in"*). Their rights are the owner's,
   with legal; no change here waits on them.

@@ -1,0 +1,28 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/mxm-thanks-eg-engines",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"        # the GUI floor; crates that do not need it override downward
+license = "GPL-3.0-or-later"
+authors = ["mxm"]
+repository = "https://github.com/mxm-audio/mxm-thanks-eg"
+
+[workspace.dependencies]
+# Pinned exactly, as in every MXM repository; Cargo.lock is committed.
+bytemuck = { version = "=1.25.2", default-features = false }
+mxm-thanks-eg-engines = { path = "crates/mxm-thanks-eg-engines" }
+sha2 = "=0.10.9"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
+
+# The engines are tested bit for bit, so their tests run optimised: a debug build of the same
+# arithmetic gives the same bits (no fast-math anywhere), only slower.
+[profile.dev.package.mxm-thanks-eg-engines]
+opt-level = 3
