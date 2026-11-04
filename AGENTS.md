@@ -98,4 +98,4 @@ The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-en
 | Doc | Scope |
 |---|---|
 | [`crates/mxm-thanks-eg-engines/AGENTS.md`](crates/mxm-thanks-eg-engines/AGENTS.md) | The port: the porting contract, the bits, the arena, the reference cases |
-| [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: the 101 parameters and the slots' lists, events and the callback, Init and the presets, the control map; the editor in T4 |
+| [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: the 101 parameters and the slots' lists, events and the callback, Init and the presets, the control map, and the editor: its twelve cards, the slots as rows on their targets' cards |
