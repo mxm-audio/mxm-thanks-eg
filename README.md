@@ -6,8 +6,12 @@ modulation slots. Its engines are ported to Rust from Emilie Gillet's code for M
 Plaits, which she published under the MIT licence; the name thanks her. She has no part in this
 product and does not endorse it.
 
-Pre-alpha: nothing is built yet, nothing is released, and the repository is private until it is
-ready.
+Eight voices; per voice three envelopes, each also a function generator (cycling, gated, or
+following another signal), and three LFOs; sixteen route slots from nineteen sources to thirty-two
+targets; fifty-two factory sounds. The engines are held bit for bit to the code they were ported
+from. `cargo xtask bundle mxm-thanks-eg --release` builds and installs the CLAP and VST3.
+
+Pre-alpha: nothing is released, and the repository is private until it is ready.
 
 ## Licence
 
