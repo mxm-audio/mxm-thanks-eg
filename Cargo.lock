@@ -1498,6 +1498,14 @@ version = "0.4.1"
 source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
 
 [[package]]
+name = "mxm-measure"
+version = "0.4.1"
+source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
+dependencies = [
+ "mxm-rng",
+]
+
+[[package]]
 name = "mxm-modulation"
 version = "0.4.1"
 source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
@@ -1540,6 +1548,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "mxm-rng"
+version = "0.4.1"
+source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
+
+[[package]]
 name = "mxm-telemetry"
 version = "0.4.1"
 source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
@@ -1556,6 +1569,15 @@ dependencies = [
  "mxm-plugin-test",
  "mxm-thanks-eg-engines",
  "nice-plug",
+]
+
+[[package]]
+name = "mxm-thanks-eg-dsp"
+version = "0.1.0"
+dependencies = [
+ "mxm-measure",
+ "mxm-modulation",
+ "mxm-thanks-eg-engines",
 ]
 
 [[package]]
@@ -4001,3 +4023,13 @@ checksum = "29ce2c8a9384ad323cf564b67da86e21d3cfdff87908bc1223ed5c99bc792713"
 dependencies = [
  "zune-core",
 ]
+
+[[patch.unused]]
+name = "egui-baseview"
+version = "0.7.2"
+source = "git+https://github.com/mxm-audio/egui-baseview?branch=main#362c13629e0145370b412198e5f8e8b4daca3835"
+
+[[patch.unused]]
+name = "nice-plug-egui"
+version = "0.5.1"
+source = "git+https://github.com/mxm-audio/nice-plug-egui?branch=main#d1d792fb8670a5a8f6f15f630522e4e8a5a6e8a6"

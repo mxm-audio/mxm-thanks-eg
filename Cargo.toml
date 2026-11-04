@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/mxm-thanks-eg-engines",
+    "crates/mxm-thanks-eg-dsp",
     "plugins/mxm-thanks-eg",
     "xtask",
 ]
@@ -15,12 +16,29 @@ authors = ["mxm"]
 repository = "https://github.com/mxm-audio/mxm-thanks-eg"
 
 [workspace.dependencies]
-# Pinned exactly, as in every MXM repository; Cargo.lock is committed.
+# Pinned exactly, as in every MXM repository; Cargo.lock is committed. Own crates by path, the
+# kit's and the player's from their `main`, locked.
 bytemuck = { version = "=1.25.2", default-features = false }
+egui = "=0.36.1"
+mxm-control-map = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-editor = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-measure = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-modulation = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-modulation-params = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-params = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-player = { git = "https://github.com/mxm-audio/mxm-player", branch = "main" }
+mxm-player-harness = { git = "https://github.com/mxm-audio/mxm-player", branch = "main" }
 mxm-plugin-test = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-preset = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-rng = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-telemetry = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-tempo = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-thanks-eg-dsp = { path = "crates/mxm-thanks-eg-dsp" }
 mxm-thanks-eg-engines = { path = "crates/mxm-thanks-eg-engines" }
+mxm-ui = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-xtask = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
-nice-plug = { version = "=0.4.2", default-features = false, features = ["assert_process_allocs"] }
+nice-plug = { version = "=0.4.2", default-features = false, features = ["editor", "assert_process_allocs"] }
+nice-plug-egui = { version = "=0.5.1", default-features = false, features = ["opengl"] }
 sha2 = "=0.10.9"
 
 [profile.release]
@@ -32,7 +50,9 @@ strip = "symbols"
 [profile.dev.package.mxm-thanks-eg-engines]
 opt-level = 3
 
-# nice-plug as published, plus the patches in its fork's PATCHES.md, as every MXM repository that
-# builds a plugin patches it. The editor's forks (egui-baseview, nice-plug-egui) come with T4's editor.
+# nice-plug, egui-baseview and nice-plug-egui as published, plus the patches in each fork's
+# PATCHES.md, as every MXM repository that builds a plugin patches them.
 [patch.crates-io]
 nice-plug = { git = "https://github.com/mxm-audio/nice-plug", branch = "main" }
+egui-baseview = { git = "https://github.com/mxm-audio/egui-baseview", branch = "main" }
+nice-plug-egui = { git = "https://github.com/mxm-audio/nice-plug-egui", branch = "main" }

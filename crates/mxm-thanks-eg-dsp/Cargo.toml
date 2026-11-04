@@ -1,0 +1,18 @@
+[package]
+name = "mxm-thanks-eg-dsp"
+description = "MXM Thanks EG's instrument: eight voices of the ported engines, their envelopes, LFOs and route slots, and the resampler"
+version.workspace = true
+edition.workspace = true
+# Framework-free: the ported engines and the collection's routing, both below the GUI floor.
+rust-version = "1.88"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+mxm-thanks-eg-engines.workspace = true
+mxm-modulation.workspace = true
+
+[dev-dependencies]
+mxm-measure.workspace = true
+mxm-modulation = { workspace = true, features = ["conformance"] }
