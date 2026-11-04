@@ -88,7 +88,7 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace     # the engines' reference cases, bit for bit; the plugin's identity
+cargo test --workspace     # the engines' reference cases, bit for bit; the plugin's parameters, presets and map
 ```
 
 The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-engines/tests/`.
@@ -98,4 +98,4 @@ The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-en
 | Doc | Scope |
 |---|---|
 | [`crates/mxm-thanks-eg-engines/AGENTS.md`](crates/mxm-thanks-eg-engines/AGENTS.md) | The port: the porting contract, the bits, the arena, the reference cases |
-| [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: in T2 the bare plugin, one voice at 48 kHz |
+| [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: the 101 parameters and the slots' lists, events and the callback, Init and the presets, the control map; the editor in T4 |

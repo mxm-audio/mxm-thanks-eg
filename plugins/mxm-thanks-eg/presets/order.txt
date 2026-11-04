@@ -1,0 +1,9 @@
+filter-bass.json
+bright-keys.json
+string-ensemble.json
+soft-saw-pad.json
+chord-stabs.json
+legato-lead.json
+struck-bar.json
+deep-kick.json
+noise-wind.json

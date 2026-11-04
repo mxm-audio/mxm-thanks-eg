@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "_comment": [
+    "MXM Thanks EG's collection roles. Only controls whose meaning matches a role are claimed.",
+    "osc1.wave is Model, the engine; osc1.tune is Frequency, the coarse pitch about the note.",
+    "amp_env.decay is the gate's decay: at Init a note pings the gate, and Gate decay is how long",
+    "it rings. Its other envelope roles stay empty: the gate has no attack, sustain or release, and",
+    "no envelope reaches the sound until a route aims one there.",
+    "voice.note_priority is the voice mode (Poly, Mono, Legato), a key assign.",
+    "No filter role: there is no filter. Harmonics, Timbre and Morph have no role in the standard.",
+    "No route amount is claimed: a slot moves with its routing, so no knob could keep one meaning.",
+    "lfo1.sync and lfo2.sync stay empty, as on every instrument until the collection maps syncs."
+  ],
+  "instruments": [
+    {
+      "clap_id": "dk.mxm.mxm-thanks-eg",
+      "name": "mxm-thanks-eg",
+      "params": {
+        "osc1.wave": "model",
+        "osc1.tune": "frequency",
+
+        "amp_env.decay": "decay",
+
+        "lfo1.rate": "lfo1_rate",
+        "lfo1.shape": "lfo1_shape",
+        "lfo2.rate": "lfo2_rate",
+        "lfo2.shape": "lfo2_shape",
+
+        "voice.glide": "glide",
+        "voice.bend_range": "bend_range",
+        "voice.note_priority": "mode",
+        "voice.output": "volume"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 [package]
 name = "mxm-thanks-eg"
-description = "A macro-oscillator instrument: twenty-four engines, each played from four controls"
+description = "A polyphonic macro-oscillator instrument: twenty-four engines, each played from four controls, with function-generator envelopes, LFOs and sixteen route slots"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -15,11 +15,24 @@ repository.workspace = true
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-mxm-thanks-eg-engines.workspace = true
+# The instrument: voices, envelopes, LFOs, the route slots and the resampler, behind the interface
+# in its `src/lib.rs`.
+mxm-thanks-eg-dsp.workspace = true
 # `vst3` exports the VST3 as well as the CLAP. `unsafe_flush_denormals` sets flush-to-zero around
 # `process`, as the engines' reference was rendered (crates/mxm-thanks-eg-engines/AGENTS.md).
 nice-plug = { workspace = true, features = ["vst3", "unsafe_flush_denormals"] }
+# `ErasedParam` for the preset system, and the collection's value text.
+mxm-params.workspace = true
+# The preset system: Init, the factory set, the browser's library, a host's preset discovery.
+mxm-preset.workspace = true
+# The LFOs' tempo sync: the one ladder and the tempo in force.
+mxm-tempo.workspace = true
+# The output meter and the developer channel's requests of the editor.
+mxm-telemetry.workspace = true
 
 [dev-dependencies]
-# The collection's shared headless checks: the VST3 class id and categories.
+# The collection's shared headless checks: the VST3 class id and categories, the bundle's name, the
+# host's text round trip, the host description's words.
 mxm-plugin-test.workspace = true
+# `control-map.json` read against the standard, as a host reads it.
+mxm-control-map.workspace = true

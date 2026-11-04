@@ -1,10 +1,29 @@
-//! T2's bare parameters: the module's own controls, and two of the instrument's. Provisional: the
-//! instrument's 101 come in T3 and are fixed at the gate (ops' `plans/plan-mxm-thanks-eg.md` §5.5).
+//! The 101 host parameters (ops' `plans/plan-mxm-thanks-eg.md` §5.5): the voice's 17, each
+//! envelope's 7, each LFO's 5 and the sixteen route slots' 48 ([`crate::routes`]).
+//!
+//! Every `#[id]` becomes permanent at the gate (T5), with the order of every list a saved state
+//! stores: Model's engines, the voice modes, the envelope modes, the LFO shapes, and the route
+//! slots' sources and targets.
+//!
+//! **Smooth signals, not coefficients.** What is added to or multiplies the sound is smoothed;
+//! times, rates, modes and switches configure the state machines and are not. [`ThanksEgParams::
+//! settings`] reads the patch once per process call; [`ThanksEgParams::advance`] moves the smoothed
+//! signals once per internal block.
+//!
+//! **The Init rule** (`docs/plugin-conventions.md` in mxm-kit): every amount starts at zero, every
+//! configuration somewhere musically useful, and Init is these defaults. The amounts are
+//! [`AMOUNT_IDS`]; `init_is_every_amount_at_zero_and_nothing_routed` holds the rule.
 
+use crate::routes::{ROUTE_IDS, Routes};
+use mxm_params::text::{self, StringToValue, ValueToString};
+use mxm_thanks_eg_dsp::{
+    ENVELOPES, EnvelopeMode, EnvelopeSettings, LFOS, LfoSettings, LfoShape, Mode, SLOTS, Settings,
+};
 use nice_plug::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
-/// The engines, in Plaits' registration order (its `dsp/voice.cc`): the instrument's own names.
+/// The engines, in Plaits' registration order (its `dsp/voice.cc`): the instrument's own names,
+/// which Model reads.
 pub const ENGINE_NAMES: [&str; 24] = [
     "Analogue with filter",
     "Phase distortion",
@@ -32,63 +51,168 @@ pub const ENGINE_NAMES: [&str; 24] = [
     "Hi-hat",
 ];
 
-#[derive(Params)]
-pub struct ThanksEgParams {
-    #[id = "model"]
-    pub model: IntParam,
-    #[id = "frequency"]
-    pub frequency: FloatParam,
-    #[id = "fine"]
-    pub fine: FloatParam,
-    #[id = "harmonics"]
-    pub harmonics: FloatParam,
-    #[id = "timbre"]
-    pub timbre: FloatParam,
-    #[id = "morph"]
-    pub morph: FloatParam,
-    /// The module's three attenuverters: how far the decay envelope moves each control.
-    #[id = "fm"]
-    pub fm: FloatParam,
-    #[id = "timbre_mod"]
-    pub timbre_mod: FloatParam,
-    #[id = "morph_mod"]
-    pub morph_mod: FloatParam,
-    #[id = "decay"]
-    pub decay: FloatParam,
-    #[id = "colour"]
-    pub colour: FloatParam,
-    #[id = "aux"]
-    pub aux: FloatParam,
-    #[id = "volume"]
-    pub volume: FloatParam,
+/// The engines in banks of eight, as the module's two buttons choose them: `ENGINE_NAMES[8 * b..]`.
+pub const BANKS: usize = 3;
+
+/// Init's engine: Virtual analogue, one plain source.
+pub const INIT_MODEL: i32 = 8;
+
+const SIGNAL_SMOOTHING_MS: f32 = 10.0;
+const PITCH_SMOOTHING_MS: f32 = 20.0;
+const GAIN_SMOOTHING_MS: f32 = 20.0;
+
+/// Frequency's reach either side of the note, in semitones: the module's four octaves.
+pub const FREQUENCY_REACH_ST: i32 = 48;
+/// Fine's reach either side, in semitones.
+pub const FINE_REACH_ST: f32 = 1.0;
+pub const BEND_RANGE_MAX_ST: i32 = 24;
+pub const GLIDE_MAX_S: f32 = 5.0;
+/// An envelope's times, each on its own parameter: the DSP's range (its `AGENTS.md`).
+pub const ENVELOPE_MIN_S: f32 = 0.0005;
+pub const ENVELOPE_MAX_S: f32 = 30.0;
+/// An LFO's free rate: the DSP's range.
+pub const LFO_MIN_HZ: f32 = 0.01;
+pub const LFO_MAX_HZ: f32 = 50.0;
+pub const FADE_MAX_S: f32 = 10.0;
+pub const VOLUME_MIN_DB: f32 = -60.0;
+pub const VOLUME_MAX_DB: f32 = 0.0;
+pub const VOLUME_INIT_DB: f32 = -9.0;
+
+/// **Every LFO's tempo sync** (`docs/plugin-conventions.md`, *Tempo sync is one button*): the
+/// collection's LFO ladder, 1/32 to four bars, the top of the Rate the fastest.
+pub const LFO_SYNC: mxm_tempo::Ladder =
+    mxm_tempo::Ladder::new(mxm_tempo::Span::LFO, mxm_tempo::Direction::Rate);
+
+/// How the voices take notes.
+#[derive(Enum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VoiceMode {
+    #[id = "poly"]
+    #[name = "Poly"]
+    Poly,
+    #[id = "mono"]
+    #[name = "Mono"]
+    Mono,
+    #[id = "legato"]
+    #[name = "Legato"]
+    Legato,
 }
 
-fn unit(name: &str, default: f32) -> FloatParam {
-    FloatParam::new(name, default, FloatRange::Linear { min: 0.0, max: 1.0 })
-        .with_value_to_string(formatters::v2s_f32_percentage(0))
-        .with_string_to_value(formatters::s2v_f32_percentage())
-        .with_unit("%")
+impl From<VoiceMode> for Mode {
+    fn from(mode: VoiceMode) -> Self {
+        match mode {
+            VoiceMode::Poly => Self::Poly,
+            VoiceMode::Mono => Self::Mono,
+            VoiceMode::Legato => Self::Legato,
+        }
+    }
 }
 
-/// A parameter's text, and the value read back from text, as nice-plug takes them.
-type Reading = Arc<dyn Fn(f32) -> String + Send + Sync>;
-type Parsing = Arc<dyn Fn(&str) -> Option<f32> + Send + Sync>;
+/// What drives an envelope.
+#[derive(Enum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EnvelopeModeChoice {
+    #[id = "note"]
+    #[name = "Note"]
+    Note,
+    #[id = "gate"]
+    #[name = "Gate"]
+    Gate,
+    #[id = "follow"]
+    #[name = "Follow"]
+    Follow,
+}
 
-/// Semitones, `decimals` places, never `-0`: a reading that does not round-trip fails
-/// `clap-validator`'s conversions.
-fn semitones(decimals: usize) -> Reading {
-    Arc::new(move |v| {
-        let scale = 10f32.powi(decimals as i32);
-        // Adding zero turns a rounded -0 into 0.
-        format!("{:.*}", decimals, (v * scale).round() / scale + 0.0)
+impl From<EnvelopeModeChoice> for EnvelopeMode {
+    fn from(mode: EnvelopeModeChoice) -> Self {
+        match mode {
+            EnvelopeModeChoice::Note => Self::Note,
+            EnvelopeModeChoice::Gate => Self::Gate,
+            EnvelopeModeChoice::Follow => Self::Follow,
+        }
+    }
+}
+
+/// An LFO's shape.
+#[derive(Enum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LfoShapeChoice {
+    #[id = "sine"]
+    #[name = "Sine"]
+    Sine,
+    #[id = "triangle"]
+    #[name = "Triangle"]
+    Triangle,
+    #[id = "saw_up"]
+    #[name = "Saw up"]
+    SawUp,
+    #[id = "saw_down"]
+    #[name = "Saw down"]
+    SawDown,
+    #[id = "square"]
+    #[name = "Square"]
+    Square,
+    #[id = "sample_and_hold"]
+    #[name = "Sample and hold"]
+    SampleAndHold,
+    #[id = "smooth_random"]
+    #[name = "Smooth random"]
+    SmoothRandom,
+}
+
+impl From<LfoShapeChoice> for LfoShape {
+    fn from(shape: LfoShapeChoice) -> Self {
+        match shape {
+            LfoShapeChoice::Sine => Self::Sine,
+            LfoShapeChoice::Triangle => Self::Triangle,
+            LfoShapeChoice::SawUp => Self::SawUp,
+            LfoShapeChoice::SawDown => Self::SawDown,
+            LfoShapeChoice::Square => Self::Square,
+            LfoShapeChoice::SampleAndHold => Self::SampleAndHold,
+            LfoShapeChoice::SmoothRandom => Self::SmoothRandom,
+        }
+    }
+}
+
+/// Tenths of a millisecond below a second, hundredths of a second from it — **the unit chosen from
+/// the rounded tenths**, so the host's round trip is idempotent at the switch: chosen from the raw
+/// value, 0.99995 s would print `1000.0 ms`, which parses to one second and prints `1.00 s`. Tenths,
+/// because an envelope's fastest time is half a millisecond. Reads back through
+/// `mxm_params::text::parse_time`. mxm-mono-pr1's `v2s_time` is the same reading: the second copy,
+/// due to move into `mxm_params::text`.
+fn time_text() -> ValueToString {
+    Arc::new(|seconds| {
+        let ms = seconds * 1_000.0;
+        if (ms * 10.0).round() >= 10_000.0 {
+            format!("{seconds:.2} s")
+        } else {
+            format!("{ms:.1} ms")
+        }
     })
 }
 
-fn parse_semitones() -> Parsing {
-    Arc::new(|s| s.trim().trim_end_matches("st").trim().parse::<f32>().ok())
+/// Semitones as typed: `+12`, `-0.5 st`, `7st`.
+fn parse_semitones() -> StringToValue {
+    Arc::new(|text| {
+        text.trim()
+            .trim_end_matches("st")
+            .trim()
+            .parse::<f32>()
+            .ok()
+    })
 }
 
-fn amount(name: &str) -> FloatParam {
+/// A value of 0 to 1, read as a percentage.
+fn unit(name: impl Into<String>, default: f32) -> FloatParam {
+    FloatParam::new(name, default, FloatRange::Linear { min: 0.0, max: 1.0 })
+        .with_value_to_string(text::percent())
+        .with_string_to_value(text::parse_percent())
+}
+
+/// A signal of 0 to 1, smoothed.
+fn signal(name: impl Into<String>, default: f32) -> FloatParam {
+    unit(name, default).with_smoother(SmoothingStyle::Linear(SIGNAL_SMOOTHING_MS))
+}
+
+/// An attenuverter's amount, −1 to 1, smoothed; zero at Init.
+fn attenuverter(name: &str) -> FloatParam {
     FloatParam::new(
         name,
         0.0,
@@ -97,15 +221,320 @@ fn amount(name: &str) -> FloatParam {
             max: 1.0,
         },
     )
-    .with_value_to_string(formatters::v2s_f32_percentage(0))
-    .with_string_to_value(formatters::s2v_f32_percentage())
-    .with_unit("%")
+    .with_smoother(SmoothingStyle::Linear(SIGNAL_SMOOTHING_MS))
+    .with_value_to_string(text::percent())
+    .with_string_to_value(text::parse_percent())
 }
+
+/// A time from `min` to `max` seconds, skewed toward the short end, unsmoothed: it configures a
+/// state machine.
+fn seconds(name: impl Into<String>, default: f32, min: f32, max: f32) -> FloatParam {
+    FloatParam::new(
+        name,
+        default,
+        FloatRange::Skewed {
+            min,
+            max,
+            factor: FloatRange::skew_factor(-2.0),
+        },
+    )
+    .with_value_to_string(time_text())
+    .with_string_to_value(text::parse_time())
+}
+
+fn lfo_rate_range() -> FloatRange {
+    FloatRange::Skewed {
+        min: LFO_MIN_HZ,
+        max: LFO_MAX_HZ,
+        factor: FloatRange::skew_factor(-2.0),
+    }
+}
+
+/// An LFO's Rate, free in hertz; synced, its position picks a division on [`LFO_SYNC`]. A typed
+/// division selects the position that picks it, as the drum machine's.
+fn lfo_rate(name: String, default: f32) -> FloatParam {
+    let free_parser = formatters::s2v_f32_hz_then_khz();
+    FloatParam::new(name, default, lfo_rate_range())
+        .with_unit(" Hz")
+        .with_value_to_string(formatters::v2s_f32_rounded(2))
+        .with_string_to_value(Arc::new(move |text| {
+            match mxm_tempo::Division::parse(text).filter(|d| LFO_SYNC.span.contains(*d)) {
+                Some(division) => Some(lfo_rate_range().unnormalize(LFO_SYNC.position(division))),
+                None => free_parser(text),
+            }
+        }))
+}
+
+/// One envelope's seven: an ADSR with MATHS' functions (the plan's §5.4).
+#[derive(Params)]
+pub struct EnvelopeParams {
+    #[id = "attack"]
+    pub attack: FloatParam,
+    #[id = "decay"]
+    pub decay: FloatParam,
+    #[id = "sustain"]
+    pub sustain: FloatParam,
+    #[id = "release"]
+    pub release: FloatParam,
+    /// One curve for every segment: −1 logarithmic, 0 linear, +1 exponential.
+    #[id = "response"]
+    pub response: FloatParam,
+    #[id = "cycle"]
+    pub cycle: BoolParam,
+    #[id = "mode"]
+    pub mode: EnumParam<EnvelopeModeChoice>,
+}
+
+impl EnvelopeParams {
+    fn new(n: usize) -> Self {
+        let name = |what: &str| format!("Envelope {n} {what}");
+        Self {
+            attack: seconds(name("attack"), 0.005, ENVELOPE_MIN_S, ENVELOPE_MAX_S),
+            decay: seconds(name("decay"), 0.3, ENVELOPE_MIN_S, ENVELOPE_MAX_S),
+            sustain: signal(name("sustain"), 0.7),
+            release: seconds(name("release"), 0.3, ENVELOPE_MIN_S, ENVELOPE_MAX_S),
+            response: FloatParam::new(
+                name("response"),
+                0.0,
+                FloatRange::Linear {
+                    min: -1.0,
+                    max: 1.0,
+                },
+            )
+            .with_value_to_string(text::percent())
+            .with_string_to_value(text::parse_percent()),
+            cycle: BoolParam::new(name("cycle"), false),
+            mode: EnumParam::new(name("mode"), EnvelopeModeChoice::Note),
+        }
+    }
+
+    /// The envelope as the DSP takes it, the patch as set.
+    fn settings(&self) -> EnvelopeSettings {
+        EnvelopeSettings {
+            attack_s: self.attack.value(),
+            decay_s: self.decay.value(),
+            sustain: self.sustain.value(),
+            release_s: self.release.value(),
+            response: self.response.value(),
+            cycle: self.cycle.value(),
+            mode: self.mode.value().into(),
+        }
+    }
+}
+
+/// One LFO's five.
+#[derive(Params)]
+pub struct LfoParams {
+    #[id = "rate"]
+    pub rate: FloatParam,
+    #[id = "shape"]
+    pub shape: EnumParam<LfoShapeChoice>,
+    /// The Rate's tempo sync: its position picks a division of the host's tempo.
+    #[id = "sync"]
+    pub sync: BoolParam,
+    /// Restart with each note, per voice; off, one LFO for all voices, free-running.
+    #[id = "retrigger"]
+    pub retrigger: BoolParam,
+    /// A fade-in after each note: a time, and still an amount (how much fade there is), so zero at
+    /// Init, as glide is.
+    #[id = "fade"]
+    pub fade: FloatParam,
+}
+
+impl LfoParams {
+    fn new(n: usize, rate_hz: f32) -> Self {
+        let name = |what: &str| format!("LFO {n} {what}");
+        Self {
+            rate: lfo_rate(name("rate"), rate_hz),
+            shape: EnumParam::new(name("shape"), LfoShapeChoice::Sine),
+            sync: BoolParam::new(name("sync"), false),
+            retrigger: BoolParam::new(name("retrigger"), false),
+            fade: seconds(name("fade"), 0.0, 0.0, FADE_MAX_S),
+        }
+    }
+
+    /// The Rate while its sync follows the host, or `None` for its free value: the modulated
+    /// position picks a division on [`LFO_SYNC`]. Missing or invalid tempo is the free value.
+    #[must_use]
+    pub fn synced_rate(&self, tempo: Option<f64>) -> Option<f32> {
+        LFO_SYNC
+            .resolve(
+                self.sync.value(),
+                tempo,
+                self.rate.modulated_normalized_value(),
+                f64::from(self.rate.preview_plain(0.0)),
+                f64::from(self.rate.preview_plain(1.0)),
+            )
+            .map(|hz| hz as f32)
+    }
+
+    fn settings(&self, tempo: Option<f64>) -> LfoSettings {
+        LfoSettings {
+            rate_hz: self.synced_rate(tempo).unwrap_or(self.rate.value()),
+            shape: self.shape.value().into(),
+            retrigger: self.retrigger.value(),
+            fade_s: self.fade.value(),
+        }
+    }
+}
+
+#[derive(Params)]
+pub struct ThanksEgParams {
+    // The voice's seventeen: the module's knobs, then the instrument's.
+    /// The engine, 0–23 in [`ENGINE_NAMES`]' order.
+    #[id = "model"]
+    pub model: IntParam,
+    #[id = "frequency"]
+    pub frequency: IntParam,
+    #[id = "fine"]
+    pub fine: FloatParam,
+    #[id = "harmonics"]
+    pub harmonics: FloatParam,
+    #[id = "timbre"]
+    pub timbre: FloatParam,
+    #[id = "morph"]
+    pub morph: FloatParam,
+    /// The module's three attenuverters: how far its decay envelope moves Pitch, Timbre and Morph.
+    #[id = "fm_amount"]
+    pub fm_amount: FloatParam,
+    #[id = "timbre_amount"]
+    pub timbre_amount: FloatParam,
+    #[id = "morph_amount"]
+    pub morph_amount: FloatParam,
+    /// The gate's decay and colour.
+    #[id = "decay"]
+    pub decay: FloatParam,
+    #[id = "colour"]
+    pub colour: FloatParam,
+    /// 0: OUT; 1: AUX.
+    #[id = "aux"]
+    pub aux: FloatParam,
+    /// 0: OUT and AUX in both channels; 1: OUT left, AUX right.
+    #[id = "spread"]
+    pub spread: FloatParam,
+    #[id = "mode"]
+    pub mode: EnumParam<VoiceMode>,
+    #[id = "glide"]
+    pub glide: FloatParam,
+    #[id = "bend_range"]
+    pub bend_range: IntParam,
+    /// Linear gain, read in decibels.
+    #[id = "volume"]
+    pub volume: FloatParam,
+
+    #[nested(id_prefix = "env1", group = "Envelope 1")]
+    pub env1: EnvelopeParams,
+    #[nested(id_prefix = "env2", group = "Envelope 2")]
+    pub env2: EnvelopeParams,
+    #[nested(id_prefix = "env3", group = "Envelope 3")]
+    pub env3: EnvelopeParams,
+
+    #[nested(id_prefix = "lfo1", group = "LFO 1")]
+    pub lfo1: LfoParams,
+    #[nested(id_prefix = "lfo2", group = "LFO 2")]
+    pub lfo2: LfoParams,
+    #[nested(id_prefix = "lfo3", group = "LFO 3")]
+    pub lfo3: LfoParams,
+
+    /// The sixteen route slots, `route<r>_{source,target,amount}`.
+    #[nested(group = "Routes")]
+    pub routes: Routes,
+
+    /// Loaded preset identity and canonical baseline, persisted with plugin state.
+    #[persist = "preset"]
+    pub preset: RwLock<mxm_preset::PresetIdentity>,
+}
+
+/// The voice's seventeen ids, in declaration order.
+pub const VOICE_IDS: [&str; 17] = [
+    "model",
+    "frequency",
+    "fine",
+    "harmonics",
+    "timbre",
+    "morph",
+    "fm_amount",
+    "timbre_amount",
+    "morph_amount",
+    "decay",
+    "colour",
+    "aux",
+    "spread",
+    "mode",
+    "glide",
+    "bend_range",
+    "volume",
+];
+
+macro_rules! envelope_ids {
+    ($($n:literal),*) => {
+        [$([
+            concat!("env", $n, "_attack"),
+            concat!("env", $n, "_decay"),
+            concat!("env", $n, "_sustain"),
+            concat!("env", $n, "_release"),
+            concat!("env", $n, "_response"),
+            concat!("env", $n, "_cycle"),
+            concat!("env", $n, "_mode"),
+        ]),*]
+    };
+}
+
+macro_rules! lfo_ids {
+    ($($n:literal),*) => {
+        [$([
+            concat!("lfo", $n, "_rate"),
+            concat!("lfo", $n, "_shape"),
+            concat!("lfo", $n, "_sync"),
+            concat!("lfo", $n, "_retrigger"),
+            concat!("lfo", $n, "_fade"),
+        ]),*]
+    };
+}
+
+/// Each envelope's seven ids, in declaration order.
+pub const ENVELOPE_IDS: [[&str; 7]; ENVELOPES] = envelope_ids!(1, 2, 3);
+/// Each LFO's five ids, in declaration order.
+pub const LFO_IDS: [[&str; 5]; LFOS] = lfo_ids!(1, 2, 3);
+
+/// How many parameters the host holds: the plan's §5.5.
+pub const PARAMETER_COUNT: usize =
+    VOICE_IDS.len() + ENVELOPES * 7 + LFOS * 5 + SLOTS * ROUTE_IDS[0].len();
+
+/// **The amounts**, every one zero at Init: how much of an effect there is. The attenuverters,
+/// Spread, Glide (a time, and still an amount: how much portamento there is), each LFO's Fade and
+/// every route's amount. Envelope times and LFO rates are configuration: the envelopes always run.
+pub const AMOUNT_IDS: [&str; 24] = [
+    "fm_amount",
+    "timbre_amount",
+    "morph_amount",
+    "spread",
+    "glide",
+    "lfo1_fade",
+    "lfo2_fade",
+    "lfo3_fade",
+    "route1_amount",
+    "route2_amount",
+    "route3_amount",
+    "route4_amount",
+    "route5_amount",
+    "route6_amount",
+    "route7_amount",
+    "route8_amount",
+    "route9_amount",
+    "route10_amount",
+    "route11_amount",
+    "route12_amount",
+    "route13_amount",
+    "route14_amount",
+    "route15_amount",
+    "route16_amount",
+];
 
 impl Default for ThanksEgParams {
     fn default() -> Self {
         Self {
-            model: IntParam::new("Model", 8, IntRange::Linear { min: 0, max: 23 })
+            model: IntParam::new("Model", INIT_MODEL, IntRange::Linear { min: 0, max: 23 })
                 .with_value_to_string(Arc::new(|v| {
                     ENGINE_NAMES[v.clamp(0, 23) as usize].to_owned()
                 }))
@@ -118,43 +547,427 @@ impl Default for ThanksEgParams {
                         .map(|i| i as i32)
                         .or_else(|| s.parse().ok())
                 })),
-            frequency: FloatParam::new(
+            frequency: IntParam::new(
                 "Frequency",
-                0.0,
-                FloatRange::Linear {
-                    min: -48.0,
-                    max: 48.0,
+                0,
+                IntRange::Linear {
+                    min: -FREQUENCY_REACH_ST,
+                    max: FREQUENCY_REACH_ST,
                 },
             )
-            .with_step_size(1.0)
             .with_unit(" st")
-            .with_value_to_string(semitones(0))
-            .with_string_to_value(parse_semitones()),
+            .with_value_to_string(Arc::new(|v| {
+                if v == 0 {
+                    "0".to_owned()
+                } else {
+                    format!("{v:+}")
+                }
+            }))
+            .with_string_to_value(Arc::new(|s| {
+                parse_semitones()(s).map(|st| st.round() as i32)
+            })),
             fine: FloatParam::new(
                 "Fine",
                 0.0,
                 FloatRange::Linear {
-                    min: -1.0,
-                    max: 1.0,
+                    min: -FINE_REACH_ST,
+                    max: FINE_REACH_ST,
                 },
             )
-            .with_step_size(0.01)
+            .with_smoother(SmoothingStyle::Linear(PITCH_SMOOTHING_MS))
             .with_unit(" st")
-            .with_value_to_string(semitones(2))
+            .with_value_to_string(Arc::new(|v| text::signed(v, 2)))
             .with_string_to_value(parse_semitones()),
-            harmonics: unit("Harmonics", 0.5),
-            timbre: unit("Timbre", 0.5),
-            morph: unit("Morph", 0.5),
-            fm: amount("Pitch from decay"),
-            timbre_mod: amount("Timbre from decay"),
-            morph_mod: amount("Morph from decay"),
-            decay: unit("Decay", 0.5),
-            colour: unit("Colour", 0.5),
-            aux: unit("Aux", 0.0),
-            volume: FloatParam::new("Volume", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 })
-                .with_value_to_string(formatters::v2s_f32_percentage(0))
-                .with_string_to_value(formatters::s2v_f32_percentage())
-                .with_unit("%"),
+            harmonics: signal("Harmonics", 0.5),
+            timbre: signal("Timbre", 0.5),
+            morph: signal("Morph", 0.5),
+            fm_amount: attenuverter("Pitch from decay"),
+            timbre_amount: attenuverter("Timbre from decay"),
+            morph_amount: attenuverter("Morph from decay"),
+            decay: unit("Gate decay", 0.5),
+            colour: signal("Colour", 0.5),
+            aux: signal("Aux", 0.0),
+            spread: signal("Spread", 0.0),
+            mode: EnumParam::new("Voice mode", VoiceMode::Poly),
+            glide: seconds("Glide", 0.0, 0.0, GLIDE_MAX_S),
+            bend_range: IntParam::new(
+                "Bend range",
+                2,
+                IntRange::Linear {
+                    min: 0,
+                    max: BEND_RANGE_MAX_ST,
+                },
+            )
+            .with_unit(" st")
+            .with_value_to_string(Arc::new(|v| v.to_string()))
+            .with_string_to_value(Arc::new(|s| {
+                parse_semitones()(s).map(|st| st.round() as i32)
+            })),
+            volume: FloatParam::new(
+                "Volume",
+                util::db_to_gain(VOLUME_INIT_DB),
+                FloatRange::Skewed {
+                    min: util::db_to_gain(VOLUME_MIN_DB),
+                    max: util::db_to_gain(VOLUME_MAX_DB),
+                    factor: FloatRange::gain_skew_factor(VOLUME_MIN_DB, VOLUME_MAX_DB),
+                },
+            )
+            .with_smoother(SmoothingStyle::Logarithmic(GAIN_SMOOTHING_MS))
+            .with_unit(" dB")
+            .with_value_to_string(formatters::v2s_f32_gain_to_db(1))
+            .with_string_to_value(formatters::s2v_f32_gain_to_db()),
+
+            env1: EnvelopeParams::new(1),
+            env2: EnvelopeParams::new(2),
+            env3: EnvelopeParams::new(3),
+
+            // A vibrato, a slow sweep and a drift: each useful the moment a route takes it.
+            lfo1: LfoParams::new(1, 5.0),
+            lfo2: LfoParams::new(2, 1.0),
+            lfo3: LfoParams::new(3, 0.2),
+
+            routes: Routes::default(),
+            preset: RwLock::new(mxm_preset::PresetIdentity::none()),
+        }
+    }
+}
+
+impl ThanksEgParams {
+    /// The three envelopes in order.
+    #[must_use]
+    pub fn envelopes(&self) -> [&EnvelopeParams; ENVELOPES] {
+        [&self.env1, &self.env2, &self.env3]
+    }
+
+    /// The three LFOs in order.
+    #[must_use]
+    pub fn lfos(&self) -> [&LfoParams; LFOS] {
+        [&self.lfo1, &self.lfo2, &self.lfo3]
+    }
+
+    /// **Every parameter with its permanent id, in declaration order** — the order a preset file is
+    /// written in and Init writes them, and the editor's coverage inventory. `the_parameters_are_
+    /// the_param_map_in_order` holds it to nice-plug's own list.
+    pub fn all_parameters(&self) -> Vec<(&'static str, &dyn mxm_params::ErasedParam)> {
+        let voice: [&dyn mxm_params::ErasedParam; 17] = [
+            &self.model,
+            &self.frequency,
+            &self.fine,
+            &self.harmonics,
+            &self.timbre,
+            &self.morph,
+            &self.fm_amount,
+            &self.timbre_amount,
+            &self.morph_amount,
+            &self.decay,
+            &self.colour,
+            &self.aux,
+            &self.spread,
+            &self.mode,
+            &self.glide,
+            &self.bend_range,
+            &self.volume,
+        ];
+        let mut out: Vec<(&'static str, &dyn mxm_params::ErasedParam)> =
+            Vec::with_capacity(PARAMETER_COUNT);
+        out.extend(VOICE_IDS.into_iter().zip(voice));
+        for (ids, envelope) in ENVELOPE_IDS.iter().zip(self.envelopes()) {
+            let params: [&dyn mxm_params::ErasedParam; 7] = [
+                &envelope.attack,
+                &envelope.decay,
+                &envelope.sustain,
+                &envelope.release,
+                &envelope.response,
+                &envelope.cycle,
+                &envelope.mode,
+            ];
+            out.extend(ids.iter().copied().zip(params));
+        }
+        for (ids, lfo) in LFO_IDS.iter().zip(self.lfos()) {
+            let params: [&dyn mxm_params::ErasedParam; 5] =
+                [&lfo.rate, &lfo.shape, &lfo.sync, &lfo.retrigger, &lfo.fade];
+            out.extend(ids.iter().copied().zip(params));
+        }
+        for (ids, route) in ROUTE_IDS.iter().zip(self.routes.all()) {
+            let params: [&dyn mxm_params::ErasedParam; 3] =
+                [&route.source, &route.target, &route.amount];
+            out.extend(ids.iter().copied().zip(params));
+        }
+        out
+    }
+
+    /// **The patch as the DSP takes it**, read once per process call: every value as set (the
+    /// modulated value where a host modulates it), each LFO's Rate resolved through its sync at
+    /// `tempo`. The smoothed signals are then moved by [`Self::advance`] once per internal block.
+    /// Allocates nothing.
+    #[must_use]
+    pub fn settings(&self, tempo: Option<f64>) -> Settings {
+        let envelopes = self.envelopes().map(EnvelopeParams::settings);
+        let lfos = self.lfos().map(|lfo| lfo.settings(tempo));
+        let slots = self.routes.all().map(crate::routes::RouteParams::slot);
+        Settings {
+            model: self.model.value(),
+            frequency_st: self.frequency.value() as f32,
+            fine_st: self.fine.value(),
+            harmonics: self.harmonics.value(),
+            timbre: self.timbre.value(),
+            morph: self.morph.value(),
+            fm_amount: self.fm_amount.value(),
+            timbre_amount: self.timbre_amount.value(),
+            morph_amount: self.morph_amount.value(),
+            decay: self.decay.value(),
+            colour: self.colour.value(),
+            aux: self.aux.value(),
+            spread: self.spread.value(),
+            mode: self.mode.value().into(),
+            glide_s: self.glide.value(),
+            bend_range_st: self.bend_range.value() as f32,
+            volume: self.volume.value(),
+            envelopes,
+            lfos,
+            slots,
+        }
+    }
+
+    /// **The smoothed signals, moved `samples` on**: each smoother steps once per sample of the
+    /// block it serves, so a block reads where its ramp has reached and no smoother falls behind.
+    /// Everything [`Self::settings`] read unsmoothed stays as it is. Allocates nothing.
+    pub fn advance(&self, settings: &mut Settings, samples: u32) {
+        if samples == 0 {
+            return;
+        }
+        settings.fine_st = self.fine.smoothed.next_step(samples);
+        settings.harmonics = self.harmonics.smoothed.next_step(samples);
+        settings.timbre = self.timbre.smoothed.next_step(samples);
+        settings.morph = self.morph.smoothed.next_step(samples);
+        settings.fm_amount = self.fm_amount.smoothed.next_step(samples);
+        settings.timbre_amount = self.timbre_amount.smoothed.next_step(samples);
+        settings.morph_amount = self.morph_amount.smoothed.next_step(samples);
+        settings.colour = self.colour.smoothed.next_step(samples);
+        settings.aux = self.aux.smoothed.next_step(samples);
+        settings.spread = self.spread.smoothed.next_step(samples);
+        settings.volume = self.volume.smoothed.next_step(samples);
+        for (envelope, params) in settings.envelopes.iter_mut().zip(self.envelopes()) {
+            envelope.sustain = params.sustain.smoothed.next_step(samples);
+        }
+        for (slot, route) in settings.slots.iter_mut().zip(self.routes.all()) {
+            slot.amount = route.amount.smoothed.next_step(samples);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::routes::{SourceChoice, TargetChoice};
+    use nice_plug::params::InternalParamMut;
+
+    fn set_normalized<P: InternalParamMut>(param: &P, normalized: f32) {
+        // SAFETY: exclusive test ownership; no process or GUI thread exists.
+        unsafe {
+            let _ = param._internal_set_normalized_value(normalized);
+        }
+    }
+
+    /// **Every parameter's text survives the host's round trip**, with the unit on, across the
+    /// collection's grids and switch points (`mxm_plugin_test::text_checks`). The readings here
+    /// switch only where the collection's list already probes: a time at one second.
+    #[test]
+    fn every_parameter_text_survives_the_hosts_round_trip() {
+        mxm_plugin_test::text_checks::every_text_round_trips(&ThanksEgParams::default(), &[]);
+    }
+
+    /// **101 parameters, every id unique**, the plan's §5.5 count.
+    #[test]
+    fn the_ids_are_unique_and_there_are_101() {
+        let params = ThanksEgParams::default();
+        let ids: Vec<String> = params.param_map().into_iter().map(|(id, ..)| id).collect();
+        assert_eq!(ids.len(), 101);
+        assert_eq!(PARAMETER_COUNT, 101);
+        let mut unique = ids.clone();
+        unique.sort_unstable();
+        unique.dedup();
+        assert_eq!(unique.len(), ids.len(), "a duplicate id in {ids:?}");
+    }
+
+    /// The preset system's list is nice-plug's, id for id and in order, so neither can omit or
+    /// reorder a parameter the other has.
+    #[test]
+    fn the_parameters_are_the_param_map_in_order() {
+        let params = ThanksEgParams::default();
+        let map: Vec<String> = params.param_map().into_iter().map(|(id, ..)| id).collect();
+        let listed: Vec<&str> = params.all_parameters().iter().map(|(id, _)| *id).collect();
+        assert_eq!(listed, map);
+        let names: Vec<String> = params
+            .param_map()
+            .into_iter()
+            .map(|(_, ptr, _)| unsafe { ptr.name() }.to_owned())
+            .collect();
+        for ((_, param), name) in params.all_parameters().iter().zip(names) {
+            assert_eq!(param.name(), name, "the same parameter on both lists");
+        }
+    }
+
+    /// **The Init rule**: every amount starts at zero, nothing is routed, nothing follows the
+    /// host's tempo and one plain source sounds (OUT, Virtual analogue). Pins the rule, not the
+    /// taste: a retune of a configuration passes, a non-zero depth fails.
+    #[test]
+    fn init_is_every_amount_at_zero_and_nothing_routed() {
+        let params = ThanksEgParams::default();
+        let all = params.all_parameters();
+        for id in AMOUNT_IDS {
+            let (_, param) = all
+                .iter()
+                .find(|(candidate, _)| *candidate == id)
+                .unwrap_or_else(|| panic!("{id} is not a parameter"));
+            let zero = unsafe {
+                let (_, ptr, _) = params
+                    .param_map()
+                    .into_iter()
+                    .find(|(candidate, ..)| candidate == id)
+                    .unwrap();
+                ptr.preview_normalized(0.0)
+            };
+            assert_eq!(param.default_normalised(), zero, "{id} is an amount");
+        }
+        for route in params.routes.all() {
+            assert_eq!(route.source.default_plain_value(), SourceChoice(None));
+            assert_eq!(route.target.default_plain_value(), TargetChoice(None));
+        }
+        for lfo in params.lfos() {
+            assert!(!lfo.sync.default_plain_value(), "no sync at Init");
+        }
+        assert_eq!(params.aux.default_plain_value(), 0.0, "OUT alone sounds");
+        assert_eq!(params.model.default_plain_value(), INIT_MODEL);
+
+        // And the patch the DSP gets from Init says the same.
+        let settings = params.settings(Some(120.0));
+        assert!(
+            settings.slots.iter().all(|slot| {
+                slot.source.is_none() && slot.target.is_none() && slot.amount == 0.0
+            })
+        );
+        assert_eq!(
+            (
+                settings.fm_amount,
+                settings.timbre_amount,
+                settings.morph_amount
+            ),
+            (0.0, 0.0, 0.0)
+        );
+        assert_eq!((settings.glide_s, settings.spread), (0.0, 0.0));
+        assert!(settings.lfos.iter().all(|lfo| lfo.fade_s == 0.0));
+    }
+
+    /// **Every configuration starts somewhere it can be heard**: envelope times inside their range
+    /// and short enough to play, LFO rates in the musical band, Volume below full scale.
+    #[test]
+    fn init_configurations_are_useful() {
+        let settings = ThanksEgParams::default().settings(None);
+        for envelope in settings.envelopes {
+            for time in [envelope.attack_s, envelope.decay_s, envelope.release_s] {
+                assert!((ENVELOPE_MIN_S..=1.0).contains(&time), "{envelope:?}");
+            }
+            assert!(envelope.sustain > 0.0 && !envelope.cycle);
+        }
+        for lfo in settings.lfos {
+            assert!((0.1..=10.0).contains(&lfo.rate_hz), "{lfo:?}");
+        }
+        assert!(settings.volume > 0.0 && settings.volume < 1.0);
+        assert_eq!(settings.bend_range_st, 2.0);
+        assert_eq!(settings.mode, Mode::Poly);
+    }
+
+    /// **Each LFO's sync picks a division and is inert without a tempo**: off, or with no tempo,
+    /// the Rate's own hertz stand; on at 120 bpm the ends are the ladder's ends the range can hold,
+    /// the top the fastest; and the patch the DSP gets carries the resolved rate.
+    #[test]
+    fn the_lfo_sync_picks_a_division_and_is_inert_without_a_tempo() {
+        let p = ThanksEgParams::default();
+        for (i, lfo) in p.lfos().into_iter().enumerate() {
+            set_normalized(&lfo.rate, 1.0);
+            assert_eq!(lfo.synced_rate(Some(120.0)), None, "off is the free rate");
+            set_normalized(&lfo.sync, 1.0);
+            assert_eq!(lfo.synced_rate(None), None, "no tempo is the free rate");
+            assert_eq!(p.settings(None).lfos[i].rate_hz, LFO_MAX_HZ);
+
+            let top = lfo.synced_rate(Some(120.0)).expect("synced at a tempo");
+            set_normalized(&lfo.rate, 0.0);
+            let bottom = lfo.synced_rate(Some(120.0)).expect("synced at a tempo");
+            assert!(top > bottom, "the top of a rate is the fastest");
+            let reach = LFO_SYNC
+                .reachable(120.0, f64::from(LFO_MIN_HZ), f64::from(LFO_MAX_HZ))
+                .divisions();
+            assert!((top - reach[0].hz(120.0) as f32).abs() < 1e-4);
+            assert!((bottom - reach[reach.len() - 1].hz(120.0) as f32).abs() < 1e-4);
+            assert_eq!(p.settings(Some(120.0)).lfos[i].rate_hz, bottom);
+        }
+    }
+
+    /// A typed division picks the Rate position that selects it.
+    #[test]
+    fn a_typed_division_selects_its_position() {
+        let p = ThanksEgParams::default();
+        let normalized = p
+            .lfo1
+            .rate
+            .string_to_normalized_value("1/8")
+            .expect("a division parses");
+        assert!((normalized - LFO_SYNC.position(mxm_tempo::Division::Eighth)).abs() < 1e-6);
+    }
+
+    /// **The smoothed signals arrive in blocks**: `advance` steps a ramp by the block's length and
+    /// leaves what `settings` read unsmoothed alone.
+    #[test]
+    fn advance_moves_the_smoothed_signals_and_nothing_else() {
+        let p = ThanksEgParams::default();
+        for (_, ptr, _) in p.param_map() {
+            unsafe { ptr._internal_update_smoother(48_000.0, true) };
+        }
+        set_normalized(&p.timbre, 1.0);
+        set_normalized(&p.decay, 1.0);
+        unsafe {
+            p.timbre._internal_update_smoother(48_000.0, false);
+        }
+        let mut settings = p.settings(None);
+        assert_eq!(settings.timbre, 1.0, "the patch as set");
+        p.advance(&mut settings, 48);
+        assert!(
+            settings.timbre > 0.5 && settings.timbre < 1.0,
+            "1 ms into a {SIGNAL_SMOOTHING_MS} ms ramp: {}",
+            settings.timbre
+        );
+        assert_eq!(settings.decay, 1.0, "a time is not smoothed");
+        p.advance(&mut settings, 48_000);
+        assert_eq!(settings.timbre, 1.0);
+    }
+
+    /// **The product's names are its own** (root `AGENTS.md`, *The names*): no parameter, engine,
+    /// mode, shape, source or target names the module or the maker it comes from.
+    #[test]
+    fn no_name_is_the_originals() {
+        use crate::routes::{SourceChoice, TargetChoice};
+        let params = ThanksEgParams::default();
+        let mut names: Vec<String> = params
+            .all_parameters()
+            .iter()
+            .map(|(_, p)| p.name().to_owned())
+            .collect();
+        names.extend(ENGINE_NAMES.iter().map(|n| (*n).to_owned()));
+        for list in [
+            VoiceMode::variants(),
+            EnvelopeModeChoice::variants(),
+            LfoShapeChoice::variants(),
+            SourceChoice::variants(),
+            TargetChoice::variants(),
+        ] {
+            names.extend(list.iter().map(|n| (*n).to_owned()));
+        }
+        for name in names {
+            let lower = name.to_lowercase();
+            for word in ["plaits", "mutable", "maths", "make noise"] {
+                assert!(!lower.contains(word), "{name:?} names {word:?}");
+            }
         }
     }
 }

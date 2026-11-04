@@ -1548,6 +1548,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mxm-preset"
+version = "0.4.1"
+source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
+dependencies = [
+ "dirs",
+ "egui",
+ "mxm-params",
+ "mxm-ui",
+ "nice-plug",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "mxm-rng"
 version = "0.4.1"
 source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
@@ -1566,8 +1580,13 @@ source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a
 name = "mxm-thanks-eg"
 version = "0.1.0"
 dependencies = [
+ "mxm-control-map",
+ "mxm-params",
  "mxm-plugin-test",
- "mxm-thanks-eg-engines",
+ "mxm-preset",
+ "mxm-telemetry",
+ "mxm-tempo",
+ "mxm-thanks-eg-dsp",
  "nice-plug",
 ]
 
