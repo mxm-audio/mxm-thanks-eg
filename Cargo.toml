@@ -2,6 +2,8 @@
 resolver = "3"
 members = [
     "crates/mxm-thanks-eg-engines",
+    "plugins/mxm-thanks-eg",
+    "xtask",
 ]
 
 [workspace.package]
@@ -15,7 +17,10 @@ repository = "https://github.com/mxm-audio/mxm-thanks-eg"
 [workspace.dependencies]
 # Pinned exactly, as in every MXM repository; Cargo.lock is committed.
 bytemuck = { version = "=1.25.2", default-features = false }
+mxm-plugin-test = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-thanks-eg-engines = { path = "crates/mxm-thanks-eg-engines" }
+mxm-xtask = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+nice-plug = { version = "=0.4.2", default-features = false, features = ["assert_process_allocs"] }
 sha2 = "=0.10.9"
 
 [profile.release]
@@ -26,3 +31,8 @@ strip = "symbols"
 # arithmetic gives the same bits (no fast-math anywhere), only slower.
 [profile.dev.package.mxm-thanks-eg-engines]
 opt-level = 3
+
+# nice-plug as published, plus the patches in its fork's PATCHES.md, as every MXM repository that
+# builds a plugin patches it. The editor's forks (egui-baseview, nice-plug-egui) come with T4's editor.
+[patch.crates-io]
+nice-plug = { git = "https://github.com/mxm-audio/nice-plug", branch = "main" }

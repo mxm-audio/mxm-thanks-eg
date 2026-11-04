@@ -12,15 +12,18 @@ ported to Rust from Emilie Gillet's MIT code and named as a tribute to her (the 
 2026-11-04). Eight voices, each a whole Plaits voice; three envelopes that are function
 generators after Make Noise's MATHS too; three LFOs; sixteen route slots; 101 parameters.
 
-Pre-alpha: T0 (this repository) and T1 (the research and the reference harness) are done; no code
-yet. Private until it is ready; after version 1.0 of the MXM collection.
+Pre-alpha: T0 (this repository) and T1 (the research and the reference harness) are done; T2 (the
+port) is under way, engine by engine, with the bare plugin. Private until it is ready; after
+version 1.0 of the MXM collection.
 
 # Ownership
 
 Root owns `AGENTS.md`, `NOTES.md`, `README.md`, `NOTICE.md`, `LICENSE`, `TRADEMARKS.md`,
-`CONTRIBUTING.md`, `.gitignore` and `.gitattributes`. From T2: `crates/mxm-thanks-eg-engines` (the
-port), `crates/mxm-thanks-eg-dsp` (voices, envelopes, LFOs, the slots' routing),
-`plugins/mxm-thanks-eg` and `xtask`, each with its own `AGENTS.md`.
+`CONTRIBUTING.md`, `Cargo.toml`, `Cargo.lock`, `bundler.toml`, `.cargo/config.toml` (the `xtask`
+alias), `.gitignore` and `.gitattributes`, and `xtask/` (the collection's shared `mxm-xtask`:
+`bundle`). `crates/mxm-thanks-eg-engines` (the port) and `plugins/mxm-thanks-eg` (the shell) have
+their own `AGENTS.md`; `crates/mxm-thanks-eg-dsp` (voices, envelopes, LFOs, the slots' routing)
+comes with T3.
 
 The reference harness, the C++ it builds and the research pages are in the private research
 repository (`research:sources/mutable-instruments-plaits/`, its harness in `derived/harness/`;
@@ -81,10 +84,17 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
 
 # Verification
 
-None here yet. The reference is built (T1): its 220 cases and their digests, in
-`research:sources/mutable-instruments-plaits/derived/harness/`, come here with T2's port, whose
-tests render each case and compare its frames' digest.
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace     # the engines' reference cases, bit for bit; the plugin's identity
+```
+
+The reference's 220 cases and their digests (T1) are in `crates/mxm-thanks-eg-engines/tests/`.
 
 # Child DOX Index
 
-None yet.
+| Doc | Scope |
+|---|---|
+| [`crates/mxm-thanks-eg-engines/AGENTS.md`](crates/mxm-thanks-eg-engines/AGENTS.md) | The port: the porting contract, the bits, the arena, the reference cases |
+| [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: in T2 the bare plugin, one voice at 48 kHz |

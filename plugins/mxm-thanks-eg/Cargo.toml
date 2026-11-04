@@ -1,0 +1,25 @@
+[package]
+name = "mxm-thanks-eg"
+description = "Plaits' twenty-four engines as an MXM instrument; T2's bare plugin: one voice at 48 kHz"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+# `lib` as well as `cdylib`: the shipped artifact is the `cdylib`. Do not enable nice-plug's
+# `standalone` feature here: it pulls in cpal and JACK, and Cargo's feature unification would put
+# them in the shipped `.clap`.
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+mxm-thanks-eg-engines.workspace = true
+# `vst3` exports the VST3 as well as the CLAP. `unsafe_flush_denormals` sets flush-to-zero around
+# `process`, as the engines' reference was rendered (crates/mxm-thanks-eg-engines/AGENTS.md).
+nice-plug = { workspace = true, features = ["vst3", "unsafe_flush_denormals"] }
+
+[dev-dependencies]
+# The collection's shared headless checks: the VST3 class id and categories.
+mxm-plugin-test.workspace = true
