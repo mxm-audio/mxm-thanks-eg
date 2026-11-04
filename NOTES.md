@@ -105,6 +105,18 @@ Where the plan left a choice open, T3 made one; each is the owner's to keep or c
   the other shared LFOs.
 - **"Env n input"** names the Follow mode's target as the plan and the DSP do, though the
   conventions say a target is never called *Input*: for the freeze (T5).
+- **The string and modal engines ignore the key going up**, as on the module: Morph alone sets
+  how long they ring, and from about 0.7 only the instrument's 30 s guard ends them. The factory
+  plucks use an envelope into Morph as a damper.
+- **The chiptune arpeggio advances only in Mono**: in Poly each note takes a fresh voice, so it
+  plays its first step.
+- **Level is the module's law**, compressed (`1.3·L / (0.3 + L)`): −6 dB needs about 0.19. On the
+  six-op engines velocity's accent barely moves the level.
+- **A synced LFO with no host tempo runs at its free rate** (1/16's place on the knob is
+  25.6 Hz), as the collection's one sync button does everywhere.
+- **The factory sounds leave Volume alone** (`factory_content_does_not_move_volume`, as three
+  other instruments hold): each is levelled inside its own design, momentary loudness within
+  5 LU of the set's median (`tests/factory_levels.rs`). None has been heard yet.
 - **Copies the kit could hold**: the time reading is a second copy of mxm-mono-pr1's, the route
   slots a third copy of the drums' shape, and the resampler is this instrument's until MXM Step
   Sampler needs one. Moving any into mxm-kit needs the owner's word to push it.
