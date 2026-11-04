@@ -310,16 +310,16 @@
       "text": "Timbre"
     },
     "route3_amount": {
-      "v": 0.5,
-      "text": "0 %"
+      "v": 0.6,
+      "text": "20 %"
     },
     "route3_source": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.6315789,
+      "text": "LFO 3"
     },
     "route3_target": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.0625,
+      "text": "Harmonics"
     },
     "route4_amount": {
       "v": 0.5,

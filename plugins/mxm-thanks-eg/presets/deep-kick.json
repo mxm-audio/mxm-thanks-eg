@@ -22,8 +22,8 @@
       "text": "50 %"
     },
     "env1_attack": {
-      "v": 0.11066865,
-      "text": "5.0 ms"
+      "v": 0.0,
+      "text": "0.5 ms"
     },
     "env1_cycle": {
       "v": 0.0,
@@ -38,16 +38,16 @@
       "text": "Note"
     },
     "env1_release": {
-      "v": 0.31609726,
-      "text": "300.0 ms"
+      "v": 0.20154536,
+      "text": "50.0 ms"
     },
     "env1_response": {
       "v": 0.5,
       "text": "0 %"
     },
     "env1_sustain": {
-      "v": 0.7,
-      "text": "70 %"
+      "v": 1.0,
+      "text": "100 %"
     },
     "env2_attack": {
       "v": 0.11066865,
@@ -114,8 +114,8 @@
       "text": "0 %"
     },
     "frequency": {
-      "v": 0.5,
-      "text": "0 st"
+      "v": 0.375,
+      "text": "-12 st"
     },
     "glide": {
       "v": 0.0,
@@ -194,8 +194,8 @@
       "text": "Bass drum"
     },
     "morph": {
-      "v": 0.6,
-      "text": "60 %"
+      "v": 0.7,
+      "text": "70 %"
     },
     "morph_amount": {
       "v": 0.5,
@@ -286,28 +286,28 @@
       "text": "Off"
     },
     "route1_amount": {
-      "v": 0.5,
-      "text": "0 %"
+      "v": 1.0,
+      "text": "100 %"
     },
     "route1_source": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.05263158,
+      "text": "Env 1"
     },
     "route1_target": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.1875,
+      "text": "Level"
     },
     "route2_amount": {
-      "v": 0.5,
-      "text": "0 %"
+      "v": 1.0,
+      "text": "100 %"
     },
     "route2_source": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.7894737,
+      "text": "Velocity"
     },
     "route2_target": {
-      "v": 0.0,
-      "text": "Off"
+      "v": 0.1875,
+      "text": "Level"
     },
     "route3_amount": {
       "v": 0.5,
