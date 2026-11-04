@@ -23,8 +23,9 @@ port), `crates/mxm-thanks-eg-dsp` (voices, envelopes, LFOs, the slots' routing),
 `plugins/mxm-thanks-eg` and `xtask`, each with its own `AGENTS.md`.
 
 The reference harness, the C++ it builds and the research pages are in the private research
-repository (`research:plaits-engine/`, `research:oscillators/`, `research:modulation/`), never
-here: this repository commits only the harness's cases and its outputs' SHA-256s.
+repository (`research:sources/mutable-instruments-plaits/`, its harness in `derived/harness/`;
+`research:oscillators/`, `research:modulation/`), never here: this repository commits only the
+harness's cases and its outputs' SHA-256s.
 
 # Local Contracts
 
@@ -33,11 +34,14 @@ here: this repository commits only the harness's cases and its outputs' SHA-256s
 - **Rust only**: no C++ in the plugin and no FFI. Ported from `pichenettes/eurorack`'s `plaits/`
   and the parts of `stmlib` it uses, at the commits the research harness pins; each ported file
   keeps its original's copyright line, and `NOTICE.md` the MIT text.
-- **Bit for bit against the C++ at 48 kHz**, Windows' bits, in blocks of 12 as the module. The one
-  exception: a case whose engine calls a maths function where MSVC's library and Rust's differ
-  passes at most 10⁻⁶ apart, and names the call.
-- **The one change from the C++ is the tuning**: `a0` takes 48 000 where the module takes its DAC's
-  47 872.34 Hz, or every note would be 4.6 cents flat. The harness makes the same change.
+- **Bit for bit against the C++ at 48 kHz**, Windows' bits, in blocks of 12 as the module, on **the
+  16-bit frames the voice returns** (OUT and AUX, after Plaits' own output stage: ×−32767, +1,
+  clipped). The one exception: a case whose engine calls a maths function where MSVC's library and
+  Rust's differ passes at most one step of a frame apart, and names the call.
+- **The one change from the C++ is the rate**: `kCorrectedSampleRate` takes 48 000 where the module
+  takes its DAC's 47 872.34 Hz, which moves `a0` (every engine's pitch, 4.6 cents), the six-op
+  engines' rate and the LPC speech's frame rate to where the module meant them. The harness makes
+  the same change; its README lists its two compiler workarounds, which change nothing.
 - **Each voice has its own random stream**, seeded as the C++ seeds its one static `Random`, so a
   one-voice case matches.
 - **The tables are made by a Rust generator** ported from `plaits/resources/*.py`, each equal to
@@ -73,7 +77,9 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
 
 # Verification
 
-None yet: T1 builds the harness; T2's port is checked against it.
+None here yet. The reference is built (T1): its 220 cases and their digests, in
+`research:sources/mutable-instruments-plaits/derived/harness/`, come here with T2's port, whose
+tests render each case and compare its frames' digest.
 
 # Child DOX Index
 
