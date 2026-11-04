@@ -8,6 +8,10 @@
 //! drops the trigger for one block, so the voice sees a new edge, as a gate into the module would.
 //! The voice renders a block of 12 samples at a time, as the module does; an event takes effect at
 //! the next block, at most 0.25 ms late.
+//!
+//! The engines run at 48 kHz. At 48 kHz a host sample is an engine frame; at any other rate the
+//! frames are read by linear interpolation, a stopgap until T3's resampler, so the engines are in
+//! tune at every rate but held bit for bit only at 48 kHz.
 
 pub mod params;
 
@@ -29,7 +33,7 @@ pub const NAME: &str = plugin_name!();
 /// The CLAP identifier, built from the name. Permanent from the gate (T5).
 pub const CLAP_ID: &str = concat!("dk.mxm.", plugin_name!());
 
-/// The engines run at the module's rate, and until T3's resampler the plugin does too.
+/// The engines' rate, the module's.
 pub const SAMPLE_RATE: f32 = 48_000.0;
 
 /// Plaits' block: the voice renders this many frames per call.
@@ -53,6 +57,12 @@ pub struct MxmThanksEg {
     bend: f32,
     /// The key the voice plays: the newest held, or after the last release the one it kept.
     sounding: u8,
+    /// Engine frames per host sample: 1 at 48 kHz.
+    step: f64,
+    /// How far the host has read between `previous` and `next`, in engine frames.
+    phase: f64,
+    previous: f32,
+    next: f32,
 }
 
 impl Default for MxmThanksEg {
@@ -67,6 +77,10 @@ impl Default for MxmThanksEg {
             retrigger: false,
             bend: 0.0,
             sounding: 60,
+            step: 1.0,
+            phase: 0.0,
+            previous: 0.0,
+            next: 0.0,
         }
     }
 }
@@ -144,6 +158,20 @@ impl MxmThanksEg {
         };
         self.voice.render(&patch, &modulations, &mut self.frames);
     }
+
+    /// The next engine frame, mixed and scaled: Plaits' output stage inverts (×−32767), so a frame
+    /// is read back as its DAC's output stage does.
+    fn engine_sample(&mut self) -> f32 {
+        if self.position == BLOCK {
+            self.render_block();
+            self.position = 0;
+        }
+        let frame = self.frames[self.position];
+        self.position += 1;
+        let out = -f32::from(frame.out) / 32767.0;
+        let aux = -f32::from(frame.aux) / 32767.0;
+        (out + (aux - out) * self.params.aux.value()) * self.params.volume.value()
+    }
 }
 
 impl Plugin for MxmThanksEg {
@@ -179,15 +207,18 @@ impl Plugin for MxmThanksEg {
         self.params.clone()
     }
 
-    /// Only at 48 kHz until T3's resampler: at any other rate every engine would play at the
-    /// wrong pitch and speed.
     fn activate(
         &mut self,
         _audio_io_layout: &AudioIOLayout,
         buffer_config: &BufferConfig,
         _context: &mut impl ActivateContext<Self>,
     ) -> bool {
-        buffer_config.sample_rate == SAMPLE_RATE
+        let rate = buffer_config.sample_rate;
+        if !rate.is_finite() || rate <= 0.0 {
+            return false;
+        }
+        self.step = f64::from(SAMPLE_RATE) / f64::from(rate);
+        true
     }
 
     /// The host's reset can come on the audio thread, so nothing is allocated here: the keys are
@@ -197,6 +228,9 @@ impl Plugin for MxmThanksEg {
         self.held_count = 0;
         self.retrigger = false;
         self.bend = 0.0;
+        self.phase = 0.0;
+        self.previous = 0.0;
+        self.next = 0.0;
     }
 
     fn process(
@@ -216,17 +250,17 @@ impl Plugin for MxmThanksEg {
                 self.handle_event(event);
                 next_event = context.next_event();
             }
-            if self.position == BLOCK {
-                self.render_block();
-                self.position = 0;
-            }
-            let frame = self.frames[self.position];
-            self.position += 1;
-            // Plaits' output stage inverts (×−32767): read back as its DAC's output stage does.
-            let out = -f32::from(frame.out) / 32767.0;
-            let aux = -f32::from(frame.aux) / 32767.0;
-            let mix = self.params.aux.value();
-            let sample = (out + (aux - out) * mix) * self.params.volume.value();
+            let sample = if self.step == 1.0 {
+                self.engine_sample()
+            } else {
+                self.phase += self.step;
+                while self.phase >= 1.0 {
+                    self.phase -= 1.0;
+                    self.previous = self.next;
+                    self.next = self.engine_sample();
+                }
+                self.previous + (self.next - self.previous) * self.phase as f32
+            };
             for channel in output.iter_mut() {
                 channel[i] = sample;
             }

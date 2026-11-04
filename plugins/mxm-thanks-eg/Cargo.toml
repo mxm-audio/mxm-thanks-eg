@@ -1,6 +1,6 @@
 [package]
 name = "mxm-thanks-eg"
-description = "Plaits' twenty-four engines as an MXM instrument; T2's bare plugin: one voice at 48 kHz"
+description = "A macro-oscillator instrument: twenty-four engines, each played from four controls"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

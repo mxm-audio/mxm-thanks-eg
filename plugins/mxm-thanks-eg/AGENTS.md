@@ -16,8 +16,9 @@ into floats), `src/params.rs` (the bare parameters), `Cargo.toml`.
 
 # Local Contracts
 
-- **48 kHz only, until the resampler**: `activate` refuses any other rate, because every engine
-  would play at the wrong pitch and speed. MXM Player chooses the rate in its settings.
+- **The engines run at 48 kHz.** At 48 kHz a host sample is an engine frame, exactly; at any other
+  rate the frames are read by linear interpolation, a stopgap until T3's resampler, so every rate
+  plays in tune and `clap-validator`'s rates pass, but only 48 kHz is bit for bit.
 - **MIDI is the module's jacks**: the newest held key is V/OCT plus Frequency, Fine and the bend
   (±2 semitones); TRIG is high while a key is held, and drops for one block when a key is pressed
   over another, so the voice sees a new edge. Releasing the newest key returns to the one held

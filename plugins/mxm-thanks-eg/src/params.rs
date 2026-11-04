@@ -2,6 +2,7 @@
 //! instrument's 101 come in T3 and are fixed at the gate (ops' `plans/plan-mxm-thanks-eg.md` §5.5).
 
 use nice_plug::prelude::*;
+use std::sync::Arc;
 
 /// The engines, in Plaits' registration order (its `dsp/voice.cc`): the instrument's own names.
 pub const ENGINE_NAMES: [&str; 24] = [
@@ -69,6 +70,24 @@ fn unit(name: &str, default: f32) -> FloatParam {
         .with_unit("%")
 }
 
+/// A parameter's text, and the value read back from text, as nice-plug takes them.
+type Reading = Arc<dyn Fn(f32) -> String + Send + Sync>;
+type Parsing = Arc<dyn Fn(&str) -> Option<f32> + Send + Sync>;
+
+/// Semitones, `decimals` places, never `-0`: a reading that does not round-trip fails
+/// `clap-validator`'s conversions.
+fn semitones(decimals: usize) -> Reading {
+    Arc::new(move |v| {
+        let scale = 10f32.powi(decimals as i32);
+        // Adding zero turns a rounded -0 into 0.
+        format!("{:.*}", decimals, (v * scale).round() / scale + 0.0)
+    })
+}
+
+fn parse_semitones() -> Parsing {
+    Arc::new(|s| s.trim().trim_end_matches("st").trim().parse::<f32>().ok())
+}
+
 fn amount(name: &str) -> FloatParam {
     FloatParam::new(
         name,
@@ -87,8 +106,17 @@ impl Default for ThanksEgParams {
     fn default() -> Self {
         Self {
             model: IntParam::new("Model", 8, IntRange::Linear { min: 0, max: 23 })
-                .with_value_to_string(std::sync::Arc::new(|v| {
+                .with_value_to_string(Arc::new(|v| {
                     ENGINE_NAMES[v.clamp(0, 23) as usize].to_owned()
+                }))
+                // An engine's name, or its number.
+                .with_string_to_value(Arc::new(|s| {
+                    let s = s.trim();
+                    ENGINE_NAMES
+                        .iter()
+                        .position(|name| name.eq_ignore_ascii_case(s))
+                        .map(|i| i as i32)
+                        .or_else(|| s.parse().ok())
                 })),
             frequency: FloatParam::new(
                 "Frequency",
@@ -99,7 +127,9 @@ impl Default for ThanksEgParams {
                 },
             )
             .with_step_size(1.0)
-            .with_unit(" st"),
+            .with_unit(" st")
+            .with_value_to_string(semitones(0))
+            .with_string_to_value(parse_semitones()),
             fine: FloatParam::new(
                 "Fine",
                 0.0,
@@ -108,7 +138,10 @@ impl Default for ThanksEgParams {
                     max: 1.0,
                 },
             )
-            .with_unit(" st"),
+            .with_step_size(0.01)
+            .with_unit(" st")
+            .with_value_to_string(semitones(2))
+            .with_string_to_value(parse_semitones()),
             harmonics: unit("Harmonics", 0.5),
             timbre: unit("Timbre", 0.5),
             morph: unit("Morph", 0.5),
