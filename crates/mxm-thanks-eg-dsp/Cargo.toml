@@ -1,6 +1,6 @@
 [package]
 name = "mxm-thanks-eg-dsp"
-description = "MXM Thanks EG's instrument: eight voices of the ported engines, their envelopes, LFOs and route slots, and the resampler"
+description = "MXM Thanks EG's instrument: eight voices of the ported engines, their envelopes, LFOs and route slots, and the rate converter"
 version.workspace = true
 edition.workspace = true
 # Framework-free: the ported engines and the collection's routing, both below the GUI floor.
@@ -11,6 +11,7 @@ repository.workspace = true
 
 [dependencies]
 mxm-macro-osc.workspace = true
+mxm-dsp.workspace = true
 mxm-modulation.workspace = true
 
 [dev-dependencies]

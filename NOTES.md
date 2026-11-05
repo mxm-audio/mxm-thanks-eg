@@ -132,5 +132,6 @@ Where the plan left a choice open, T3 made one; each is the owner's to keep or c
   other instruments hold): each is levelled inside its own design, momentary loudness within
   5 LU of the set's median (`tests/factory_levels.rs`). None has been heard yet.
 - **Copies the kit could hold**: the time reading is a second copy of mxm-mono-pr1's, the route
-  slots a third copy of the drums' shape, and the resampler is this instrument's until MXM Step
-  Sampler needs one. Moving any into mxm-kit needs the owner's word to push it.
+  slots a third copy of the drums' shape. Moving either into mxm-kit needs the owner's word to
+  push it. The rate converter moved there (`mxm_dsp::rate_converter`), shared with MXM Modal Synth
+  (the owner, 2026-11-05: "move it into the kit"), its bits this crate's copy's.

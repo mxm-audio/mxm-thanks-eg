@@ -284,8 +284,8 @@ impl Plugin for MxmThanksEg {
         editor::create(self.params.clone(), self.telemetry.clone())
     }
 
-    /// The host's rate goes to the instrument, which prepares its resampler (and may allocate:
-    /// this is not the audio thread), and **the resampler's latency is reported here, once**, as
+    /// The host's rate goes to the instrument, which prepares its rate converter (and may allocate:
+    /// this is not the audio thread), and **the rate converter's latency is reported here, once**, as
     /// nice-plug takes it: the activate context sends it when `activate` returns. It is fixed for
     /// the activation (`docs/plugin-conventions.md`, *Latency is fixed*).
     fn activate(

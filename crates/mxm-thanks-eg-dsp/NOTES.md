@@ -6,7 +6,7 @@ The reasons behind [`AGENTS.md`](AGENTS.md) and what was measured (T3, 2026-11-0
 
 `examples/cpu.rs`, release build, eight held notes of one engine with an envelope and an LFO
 routed, 256-sample renders, on the owner's Windows machine: the heaviest is **engine 21 (the bass
-drum), 18.2 % of a core at 48 kHz and 18.7 % at 44.1 kHz** with the resampler; then the modal
+drum), 18.2 % of a core at 48 kHz and 18.7 % at 44.1 kHz** with the rate converter; then the modal
 resonator (15.6 %) and the snare (15.4 %). The pitched engines take 1 to 6.4 % (the additive
 engine is the heaviest of them). Under the plan's quarter of a core, so eight voices stand.
 

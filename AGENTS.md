@@ -24,7 +24,7 @@ Root owns `AGENTS.md`, `NOTES.md`, `README.md`, `NOTICE.md`, `LICENSE`, `TRADEMA
 alias), `.gitignore` and `.gitattributes`, and `xtask/` (the collection's shared `mxm-xtask`:
 `bundle`), and `docs/briefs/mxm-thanks-eg.md` (the design system's §14 brief).
 The port is mxm-macro-osc, its own repository (below). `crates/mxm-thanks-eg-dsp` (the
-instrument: voices, envelopes, LFOs, the slots' routing, the resampler) and `plugins/mxm-thanks-eg`
+instrument: voices, envelopes, LFOs, the slots' routing, the rate converter) and `plugins/mxm-thanks-eg`
 (the shell and editor, with `host-tests/`, the slow tier) have their own `AGENTS.md`.
 
 The reference harness, the C++ it builds and the research pages are in the private research
@@ -63,8 +63,8 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
   parameters, the envelopes' 21, the LFOs' 15 and sixteen route slots
   `route<r>_{source,target,amount}`, 48; **101**. A source or target is a value of a slot, never a
   parameter of its own. The plan's §5 has the lists, the slots' rules and the envelopes' modes.
-- **Every voice runs at 48 kHz**, and one resampler takes the sum to the host's rate with a fixed,
-  reported latency; at 48 kHz nothing is resampled.
+- **Every voice runs at 48 kHz**, and one rate converter (mxm-kit's `mxm_dsp::rate_converter`)
+  takes the sum to the host's rate with a fixed, reported latency; at 48 kHz nothing is converted.
 - The collection's contract, as every MXM instrument (the plan's §5.7).
 
 # Work Guidance
@@ -72,7 +72,7 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
 - Build and test on Windows only, as far as `python ws.py reach` says a change goes; the other
   platforms in the owner's batch (the workspace's `AGENTS.md`).
 - Engine work in mxm-macro-osc, built here first through `python ws.py link mxm-macro-osc`, as
-  kit work (the resampler, if it moves there) through `python ws.py link kit`, unlinked
+  kit work (the rate converter's) through `python ws.py link kit`, unlinked
   before any push; pushing mxm-kit's public `main` needs the owner's word.
 
 # Verification
@@ -99,5 +99,5 @@ The reference's 220 cases and their digests (T1) are mxm-macro-osc's, in its `te
 
 | Doc | Scope |
 |---|---|
-| [`crates/mxm-thanks-eg-dsp/AGENTS.md`](crates/mxm-thanks-eg-dsp/AGENTS.md) | The instrument: the interface with the plugin, the voices, the envelopes with MATHS' functions, the LFOs, the routing, the resampler |
+| [`crates/mxm-thanks-eg-dsp/AGENTS.md`](crates/mxm-thanks-eg-dsp/AGENTS.md) | The instrument: the interface with the plugin, the voices, the envelopes with MATHS' functions, the LFOs, the routing, the rate converter |
 | [`plugins/mxm-thanks-eg/AGENTS.md`](plugins/mxm-thanks-eg/AGENTS.md) | The shell: the 101 parameters and the slots' lists, events and the callback, Init and the presets, the control map, and the editor: its twelve cards, the slots as rows on their targets' cards |

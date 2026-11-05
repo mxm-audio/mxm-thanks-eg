@@ -146,7 +146,7 @@ fn one_voice_at_48_khz_is_the_engine_voice_exactly() {
 }
 
 /// **Silence in is exactly zero out once the voices are idle**, at 48 kHz and through the
-/// resampler: every engine, four voices, released, then nothing but zeros, and nothing sounding.
+/// rate converter: every engine, four voices, released, then nothing but zeros, and nothing sounding.
 #[test]
 fn silence_in_is_exact_zero_once_the_voices_are_idle() {
     for rate in [48_000.0, 44_100.0] {
@@ -694,9 +694,9 @@ fn the_lfos_retrigger_share_and_fade() {
     assert_eq!(published(&instrument, 1, Source::Lfo3), 1.0, "faded in");
 }
 
-/// **The host's rate is the 48 kHz stream resampled**, with the reported latency; at 48 kHz none.
+/// **The host's rate is the 48 kHz stream converted**, with the reported latency; at 48 kHz none.
 #[test]
-fn the_host_rate_is_the_48_khz_stream_resampled() {
+fn the_host_rate_is_the_48_khz_stream_converted() {
     let settings = Settings {
         model: 13,
         ..Settings::default()
@@ -705,17 +705,21 @@ fn the_host_rate_is_the_48_khz_stream_resampled() {
     assert_eq!(plain.latency_samples(), 0);
     plain.set_sample_rate(48_000.0);
     assert_eq!(plain.latency_samples(), 0);
-    let mut resampled = Instrument::new();
+    let mut converted = Instrument::new();
     for (rate, latency) in [(44_100.0, 78), (96_000.0, 88), (192_000.0, 176)] {
-        resampled.set_sample_rate(rate);
-        assert_eq!(resampled.latency_samples(), latency, "{rate}");
+        converted.set_sample_rate(rate);
+        assert_eq!(converted.latency_samples(), latency, "{rate}");
     }
-    resampled.set_sample_rate(96_000.0);
+    converted.set_sample_rate(96_000.0);
     plain.note_on(57, 1.0, None);
-    resampled.note_on(57, 1.0, None);
+    converted.note_on(57, 1.0, None);
     let (input, _) = render(&mut plain, &settings, 4_800);
-    let (output, _) = render(&mut resampled, &settings, 9_600);
-    let mut r = crate::resampler::Resampler::new(96_000);
+    let (output, _) = render(&mut converted, &settings, 9_600);
+    let mut r = mxm_dsp::rate_converter::RateConverter::new(
+        crate::ENGINE_RATE as u32,
+        96_000,
+        crate::PASSBAND_HZ,
+    );
     let mut n = 0;
     for &y in &output {
         while r.needs_input() {
