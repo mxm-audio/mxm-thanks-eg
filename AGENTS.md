@@ -72,7 +72,7 @@ control's name, a preset or the editor (Plaits' *Guidelines for derivative works
 - Build and test on Windows only, as far as `python ws.py reach` says a change goes; the other
   platforms in the owner's batch (the workspace's `AGENTS.md`).
 - Engine work in mxm-macro-osc, built here first through `python ws.py link mxm-macro-osc`, as
-  kit work (the resampler, the slots if they move there) through `python ws.py link kit`, unlinked
+  kit work (the resampler, if it moves there) through `python ws.py link kit`, unlinked
   before any push; pushing mxm-kit's public `main` needs the owner's word.
 
 # Verification

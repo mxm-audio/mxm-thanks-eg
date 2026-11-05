@@ -74,8 +74,9 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
   keeps its target and amount; two on one pair add (the DSP's). The amount is −1…+1 of its
   target's reach, read as a percentage: the drums' **recorded deviation** from `routing_checks`'
   pair-by-pair readings, which need a parameter per pair.
-- The slots stay here, a third copy of the shape after model-drums' and the drum machine's: moving
-  them into `mxm-modulation-params` is kit work, the owner's to approve (the plan's §5.5).
+- **The slots stay here**, a third copy of the shape after model-drums' and the drum machine's, and
+  stay out of the kit: each instrument may change its own (the owner, 2026-11-05: *"This synthe
+  and thanks Eg might change later, so the shared slots are mainly by accident"*).
 
 ## Events and the callback
 
