@@ -40,11 +40,15 @@ const GATE_CLOSED: f32 = 1e-6;
 const SILENT_BLOCKS: u32 = 512;
 /// A released voice still sounding this long after its key went up, its envelopes at rest, is
 /// faded out and stopped, so a released note always ends: only an engine that never ends on its
-/// own gets there (the chiptune engine with its envelope at noon, which on the module drones).
+/// own gets there (the string or the modal resonator with Morph high).
 /// Thirty seconds, the longest time an envelope or the gate sets.
 const GUARD_BLOCKS: u32 = (30.0 / DT) as u32;
 /// That fade, 10 ms.
 const GUARD_FADE: f32 = 0.01;
+/// The chiptune engine, which envelopes itself, the gate bypassed, and with its envelope at noon
+/// drones on the module after the key goes up. A release here closes it as the gate would (the
+/// owner, 2026-11-05: *"let the release end the chiptune drone"*).
+const CHIPTUNE: i32 = 7;
 /// The engines' quantiser scales the model's CV by the engines less one.
 const MODEL_CV_SCALE: f32 = 23.0;
 /// Glide: the time to within 1 % of the interval is the Glide setting.
@@ -141,6 +145,8 @@ pub(crate) struct Voice {
     silent: u32,
     /// The guard's fade, once it has begun.
     ending: Option<f32>,
+    /// A released chiptune note's gain, closing as the gate would; 1 until its key goes up.
+    closing: f32,
     envelopes: [Envelope; ENVELOPES],
     lfos: [Lfo; LFOS],
     fades: [Fade; LFOS],
@@ -176,6 +182,7 @@ impl Voice {
             quiet: 0,
             silent: 0,
             ending: None,
+            closing: 1.0,
             envelopes: [Envelope::new(); ENVELOPES],
             lfos: std::array::from_fn(|l| Lfo::new(lfo_seed(index, l))),
             fades: [Fade::default(); LFOS],
@@ -208,6 +215,7 @@ impl Voice {
         self.quiet = 0;
         self.silent = 0;
         self.ending = None;
+        self.closing = 1.0;
         for e in &mut self.envelopes {
             e.reset();
         }
@@ -257,6 +265,7 @@ impl Voice {
         self.quiet = 0;
         self.silent = 0;
         self.ending = None;
+        self.closing = 1.0;
         self.glide = glide_from.map_or(0.0, |from| from - f32::from(note));
         self.note = note;
         self.id = id;
@@ -410,6 +419,11 @@ impl Voice {
             Some(gain) => mix.scaled(gain),
             None => mix,
         };
+        let mix = if self.closing < 1.0 {
+            mix.scaled(self.closing)
+        } else {
+            mix
+        };
 
         self.engine.render(&patch, &modulations, &mut self.frames);
         self.fresh = false;
@@ -462,8 +476,13 @@ impl Voice {
         // Through the gate, the gate must have closed: a sparse engine (the particles) is silent
         // between its grains while the gate is still open. Bypassed, its gain stays at 1.
         let gain = self.engine.low_pass_gate_gain();
+        // A released chiptune note closes as the gate would at its slowest, by its Gate decay and
+        // Colour (`tail_seconds`' law): one pole per block toward zero.
+        if !self.gate && gain >= 1.0 && self.engine.active_engine() == CHIPTUNE {
+            self.closing *= 1.0 - closing_per_block(patch.decay, patch.lpg_colour);
+        }
         let done = if gain >= 1.0 {
-            self.silent >= SILENT_BLOCKS
+            self.silent >= SILENT_BLOCKS || self.closing < GATE_CLOSED
         } else {
             gain < GATE_CLOSED && self.silent >= 1
         };
@@ -505,7 +524,7 @@ impl Voice {
         }
         // `voice.cc`: per block the vactrol closes by `0.005 · 2^((−72·decay + 12·colour) / 12)`
         // at its slowest; ln(65 534) such steps take it from full to a step of the frame.
-        let per_block = 0.005 * ((-72.0 * s.decay + 12.0 * s.colour) / 12.0).exp2();
+        let per_block = closing_per_block(s.decay, s.colour);
         let gate = 11.09 / per_block * DT;
         Some(envelopes + gate + (QUIET_BLOCKS + SILENT_BLOCKS) as f32 * DT)
     }
@@ -523,4 +542,10 @@ impl Voice {
 /// Each voice's LFO has its own random stream.
 fn lfo_seed(voice: usize, lfo: usize) -> u32 {
     0x2545_f491_u32.wrapping_mul((voice * LFOS + lfo + 1) as u32)
+}
+
+/// How much of the way to closed the module's gate goes in a block at its slowest, at `decay` and
+/// `colour` (`voice.cc`'s vactrol): `0.005 · 2^((−72·decay + 12·colour) / 12)`.
+fn closing_per_block(decay: f32, colour: f32) -> f32 {
+    0.005 * ((-72.0 * decay + 12.0 * colour) / 12.0).exp2()
 }

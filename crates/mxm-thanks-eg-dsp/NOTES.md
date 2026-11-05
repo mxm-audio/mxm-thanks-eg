@@ -27,14 +27,21 @@ voice's `low_pass_gate_gain`, which `init` leaves at 1 for an engine that bypass
 that bypasses it after 128 ms within a step of silence; and only the outputs the mix uses are
 read. What idling cuts is under four steps (−78 dBFS before Volume), which the link test checks.
 
-## The guard
+## The chiptune's release, and the guard
 
 The chiptune engine with TRIG patched bypasses the gate and takes its envelope from the Timbre
 attenuverter: at noon there is none, so a released note drones, as the module does with nothing
-after it. No slot can close it (Level is the bypassed gate; Amplitude is a trim, `1 + Σ`), so the
-instrument ends any released note still sounding 30 s after its key went up, with a 10 ms fade. The
-owner may prefer a different answer: a VCA of the instrument's own, or the attenuverter's noon
-meaning a decay.
+after it, and no slot can close it (Level is the bypassed gate; Amplitude is a trim, `1 + Σ`).
+The owner ruled that the release ends it (2026-11-05: *"let the release end the chiptune
+drone"*): once its key is up, a chiptune voice the gate bypasses closes as the module's gate does
+at its slowest, `0.005 · 2^((−72·decay + 12·colour) / 12)` of the way per block, so Gate decay and
+Colour set how long it rings, as they do through the gate
+(`a_released_chiptune_note_closes_as_the_gate_would`). It scales the mix, never the engine, whose
+frames stay bit for bit; a decaying chiptune envelope released early is closed with it.
+
+The guard stays for what still never ends by itself: the string and the modal resonator with
+Morph high ring for good, so the instrument ends any released note still sounding 30 s after its
+key went up, with a 10 ms fade (`a_ringing_note_ends_thirty_seconds_after_its_release`).
 
 ## Choices the contract left open, for the owner to hear
 

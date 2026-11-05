@@ -56,9 +56,10 @@ Tests: `src/tests.rs`, `src/conformance.rs`, `tests/realtime.rs`; `examples/cpu.
 - **An idle voice is not rendered** and adds exact zero. Idle when its key is up and its trigger
   through the engine's delay (8 blocks), the envelopes a slot reads at rest, and the outputs the
   mix uses silent, within one step of Plaits' +1: for a block once the low-pass gate's gain is
-  below 10⁻⁶, or, an engine that bypasses the gate (its gain stays 1), for 128 ms. **A released
-  note always ends**: one still sounding 30 s after its key went up fades over 10 ms and stops (the
-  chiptune engine with its envelope at noon drones). The next note starts an idle voice as
+  below 10⁻⁶, or, an engine that bypasses the gate (its gain stays 1), for 128 ms. **A released chiptune note closes as the gate would**, at its slowest for its Gate decay and
+  Colour (the owner, 2026-11-05), so its drone ends with the release. **A released note always
+  ends**: one still sounding 30 s after its key went up (the string or the modal resonator with
+  Morph high) fades over 10 ms and stops. The next note starts an idle voice as
   `Voice::init` would; `reset` clears every voice as `Voice::new` made it.
 - Velocity (`v − 1`) and Random (`2u − 1`) are drawn per untied note; Key is the glided note on a
   60-semitone unit, middle C 0; Wheel and Pressure 0 to 1, Bend the lever −1 to 1

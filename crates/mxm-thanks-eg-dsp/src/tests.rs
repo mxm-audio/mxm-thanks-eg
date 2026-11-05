@@ -119,6 +119,15 @@ fn one_voice_at_48_khz_is_the_engine_voice_exactly() {
                 position += 1;
                 let at = done + i;
                 let want = -f32::from(frame.out) / 32767.0 * settings.volume;
+                // The chiptune engine's release closes it as the gate would (its own test): once
+                // the key is up it is the engine's frames, scaled down.
+                if model == 7 && at >= held {
+                    assert!(
+                        l[i].abs() <= want.abs() * (1.0 + 1e-6),
+                        "model 7, sample {at}"
+                    );
+                    continue;
+                }
                 if !gone && l[i] != want {
                     // The voice went idle, after its release (a frame of 0 reads as 0.0, so the
                     // first differing sample may be a few after the block it stopped at).
@@ -135,13 +144,10 @@ fn one_voice_at_48_khz_is_the_engine_voice_exactly() {
             }
             done += n;
         }
-        // The chiptune engine with its envelope at noon drones, as on the module, until the guard.
-        if model != 7 {
-            assert!(
-                gone && sounding(&instrument) == 0,
-                "model {model} never went idle"
-            );
-        }
+        assert!(
+            (gone || model == 7) && sounding(&instrument) == 0,
+            "model {model} never went idle"
+        );
     }
 }
 
@@ -181,34 +187,74 @@ fn silence_in_is_exact_zero_once_the_voices_are_idle() {
     }
 }
 
-/// **A released note always ends**: the chiptune engine with its envelope at noon drones, as on
-/// the module, so 30 s after its key went up the guard fades it over 10 ms and stops it; until
-/// then it is the engine's frames exactly.
-#[test]
-fn a_drone_ends_thirty_seconds_after_its_release() {
-    let settings = Settings {
-        model: 7,
-        ..Settings::default()
-    };
+/// Seconds of `settings`' sound until the instrument stops sounding after its one note, held for
+/// a tenth of a second, goes up; and the loudest sample in the tenth before the key went up.
+fn release_after_a_note(settings: &Settings) -> (f32, f32) {
     let mut instrument = Instrument::new();
     instrument.note_on(60, 1.0, None);
-    render(&mut instrument, &settings, 4_800);
+    let (l, _) = render(&mut instrument, settings, 4_800);
+    let held = l.iter().fold(0.0f32, |p, x| p.max(x.abs()));
     instrument.note_off(60, None);
-    let mut seconds = 0;
+    let mut tenths = 0;
     while instrument.is_sounding() {
-        let (l, _) = render(&mut instrument, &settings, 48_000);
-        if seconds < 29 {
-            assert!(
-                l.iter().any(|&x| x.abs() > 0.01),
-                "it drones at {seconds} s"
-            );
-        }
-        seconds += 1;
-        assert!(seconds <= 31, "still sounding");
+        render(&mut instrument, settings, 4_800);
+        tenths += 1;
+        assert!(tenths <= 400, "still sounding");
     }
-    assert_eq!(seconds, 31);
-    let (l, r) = render(&mut instrument, &settings, 4_800);
-    assert!(l.iter().chain(&r).all(|&x| x == 0.0));
+    let (l, r) = render(&mut instrument, settings, 4_800);
+    assert!(
+        l.iter().chain(&r).all(|&x| x == 0.0),
+        "exact zero once idle"
+    );
+    (tenths as f32 / 10.0, held)
+}
+
+/// **A released chiptune note closes as the gate would** (the owner, 2026-11-05: *"let the
+/// release end the chiptune drone"*): with its envelope at noon the engine drones, as on the
+/// module, while the key is held; once it goes up the voice closes at the gate's slowest fall for
+/// its Gate decay and Colour, to below a step of the frame, and stops. A longer Gate decay rings
+/// longer; the guard never comes into it.
+#[test]
+fn a_released_chiptune_note_closes_as_the_gate_would() {
+    let closes = |decay: f32| {
+        let settings = Settings {
+            model: 7,
+            decay,
+            ..Settings::default()
+        };
+        let (seconds, held) = release_after_a_note(&settings);
+        assert!(held > 0.01, "it drones while held at Gate decay {decay}");
+        // The gate's fall, from full to 10⁻⁶ (`voice::closing_per_block`), in seconds.
+        let per_block = 0.005 * ((-72.0 * decay + 12.0 * settings.colour) / 12.0).exp2();
+        let expected = (1e-6f32).ln() / (1.0 - per_block).ln() * crate::voice::DT;
+        assert!(
+            (seconds - expected).abs() <= 0.2,
+            "Gate decay {decay}: closed in {seconds} s, the gate's fall is {expected} s"
+        );
+        seconds
+    };
+    assert!(
+        closes(0.3) < closes(0.6),
+        "a longer Gate decay rings longer"
+    );
+}
+
+/// **A released note always ends**: the modal resonator with Morph at its top rings for longer
+/// than the guard's thirty seconds, as on the module, so 30 s after its key went up the guard
+/// fades it over 10 ms and stops it.
+#[test]
+fn a_ringing_note_ends_thirty_seconds_after_its_release() {
+    let settings = Settings {
+        model: 20,
+        morph: 1.0,
+        ..Settings::default()
+    };
+    let (seconds, held) = release_after_a_note(&settings);
+    assert!(held > 0.01, "it sounds");
+    assert!(
+        (30.0..=30.2).contains(&seconds),
+        "the guard ends it 30 s after its release, not {seconds} s"
+    );
 }
 
 /// Every slot of a set, alternating ±1.

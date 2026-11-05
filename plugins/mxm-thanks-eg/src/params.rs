@@ -16,7 +16,7 @@
 //! [`AMOUNT_IDS`]; `init_is_every_amount_at_zero_and_nothing_routed` holds the rule.
 
 use crate::routes::{ROUTE_IDS, Routes};
-use mxm_params::text::{self, StringToValue, ValueToString};
+use mxm_params::text::{self, StringToValue};
 use mxm_thanks_eg_dsp::{
     ENVELOPES, EnvelopeMode, EnvelopeSettings, LFOS, LfoSettings, LfoShape, Mode, SLOTS, Settings,
 };
@@ -172,23 +172,6 @@ impl From<LfoShapeChoice> for LfoShape {
     }
 }
 
-/// Tenths of a millisecond below a second, hundredths of a second from it — **the unit chosen from
-/// the rounded tenths**, so the host's round trip is idempotent at the switch: chosen from the raw
-/// value, 0.99995 s would print `1000.0 ms`, which parses to one second and prints `1.00 s`. Tenths,
-/// because an envelope's fastest time is half a millisecond. Reads back through
-/// `mxm_params::text::parse_time`. mxm-mono-pr1's `v2s_time` is the same reading: the second copy,
-/// due to move into `mxm_params::text`.
-fn time_text() -> ValueToString {
-    Arc::new(|seconds| {
-        let ms = seconds * 1_000.0;
-        if (ms * 10.0).round() >= 10_000.0 {
-            format!("{seconds:.2} s")
-        } else {
-            format!("{ms:.1} ms")
-        }
-    })
-}
-
 /// Semitones as typed: `+12`, `-0.5 st`, `7st`.
 fn parse_semitones() -> StringToValue {
     Arc::new(|text| {
@@ -239,7 +222,7 @@ fn seconds(name: impl Into<String>, default: f32, min: f32, max: f32) -> FloatPa
             factor: FloatRange::skew_factor(-2.0),
         },
     )
-    .with_value_to_string(time_text())
+    .with_value_to_string(text::tenths_of_milliseconds_then_seconds())
     .with_string_to_value(text::parse_time())
 }
 

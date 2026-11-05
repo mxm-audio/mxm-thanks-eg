@@ -45,6 +45,12 @@ MATHS it was designed from, is ops' `plans/plan-mxm-thanks-eg.md`; Pi reviewed i
   crate became `mxm-audio/mxm-macro-osc`, with its history; this repository takes it by its
   `main`, locked. MIT, as the code it is ported from: as GPL, most users would take the `libm`
   port instead. "Plaits" stays out of its name, as out of this product's.
+- **2026-11-05: The open points.** On the recommendations put to them, *"go, and let the release
+  end the chiptune drone"*: a released chiptune note closes as the gate would at its slowest, by
+  its Gate decay and Colour (the DSP's `NOTES.md`, *The chiptune's release, and the guard*); the
+  Follow mode's target reads *Env n follow*, its id `env<n>_input` as frozen; the time reading
+  moved into the kit, `mxm_params::text::tenths_of_milliseconds_then_seconds`, mxm-mono-pr1's
+  and MXM Modal Synth's copies with it.
 
 ## The editor
 
@@ -133,17 +139,12 @@ written once by the ignored `write_the_frozen_state`).
   Random into Level), which take a slot and move nothing; MXM Modal Synth leaves them out
   (`Target::offer`). Waived, as in mxm-drum-machine (the owner, 2026-11-05: "waive it, same as the
   drum machine").
-- **The chiptune engine drones after release** with its Timbre attenuverter at noon, as the module
-  does, and no slot can close it; the instrument fades a released note out 30 s after its key went
-  up. A guard, not a design: the owner rules what it should be.
 - **Level does nothing on the eight engines that make their own envelope** (the six-op engines, the
   string, the modal resonator, the drums), so on those the only level a slot reaches is Amplitude,
   which can only trim (×0…×2): no slot-driven VCA there.
 - **Plaits does not clamp Gate decay and Colour**; the instrument clamps them to 0…1.
 - **A shared LFO's Rate** (Retrigger off) can only follow shared sources: Wheel, Pressure, Bend and
   the other shared LFOs.
-- **"Env n input"** names the Follow mode's target as the plan and the DSP do, though the
-  conventions say a target is never called *Input*. A name, so free to change after the freeze.
 - **The string and modal engines ignore the key going up**, as on the module: Morph alone sets
   how long they ring, and from about 0.7 only the instrument's 30 s guard ends them. The factory
   plucks use an envelope into Morph as a damper.
@@ -157,7 +158,6 @@ written once by the ignored `write_the_frozen_state`).
   other instruments hold): each is levelled inside its own design, momentary loudness within
   5 LU of the set's median (`tests/factory_levels.rs`). The owner heard them (2026-11-05:
   *"Thanks EG sounded fine"*).
-- **Copies the kit could hold**: the time reading is a second copy of mxm-mono-pr1's, the route
-  slots a third copy of the drums' shape. Moving either into mxm-kit needs the owner's word to
-  push it. The rate converter moved there (`mxm_dsp::rate_converter`), shared with MXM Modal Synth
-  (the owner, 2026-11-05: "move it into the kit"), its bits this crate's copy's.
+- **The route slots stay a copy** of the drums' shape (the owner, 2026-11-05: *"the shared slots
+  are mainly by accident"*). The rate converter and the time reading are the kit's
+  (`mxm_dsp::rate_converter`, `mxm_params::text::tenths_of_milliseconds_then_seconds`).

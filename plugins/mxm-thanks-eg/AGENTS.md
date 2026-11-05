@@ -49,13 +49,11 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
 - **Names are the instrument's own**, sentence case: never "Plaits", "Mutable Instruments",
   "MATHS" or "Make Noise" (`no_name_is_the_originals`). The decay envelope's attenuverters are
   *Pitch from decay*, *Timbre from decay*, *Morph from decay*; the gate's two *Gate decay* and
-  *Colour*, as their targets are named. *Env n input* is the plan's and the DSP's word for what
-  Follow follows, which the conventions' *Declaring the target list* names as one to avoid: the
-  owner's to settle. A name is free to change; the freeze holds its id (`env<n>_input`).
+  *Colour*, as their targets are named. The Follow mode's target reads *Env n
+  follow* (the owner, 2026-11-05), its id `env<n>_input` as frozen.
 - **Readings**: `mxm_params::text` where it has one; Model reads the engine's name, Frequency and
   Fine signed semitones, Volume (stored linear) decibels, a Rate hertz (a typed division picks its
-  position), times by `params::time_text` (tenths of a millisecond, then hundredths of a second),
-  a second copy of mxm-mono-pr1's `v2s_time`, due to move into `mxm_params::text`. Held by
+  position), times by the kit's `text::tenths_of_milliseconds_then_seconds`. Held by
   `every_parameter_text_survives_the_hosts_round_trip`.
 
 ## Init, smoothing, sync
@@ -166,7 +164,8 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
 - **Designing a sound, the gotchas**: Level reaches the gate through the module's compression
   (`1.3L/(0.3+L)`, so −6 dB is about 0.19) and darkens it unless Colour is 1, where it is a plain
   VCA. An engine that envelopes itself (the six-op, the chiptune, the string, the modal, the drums,
-  speech's words) bypasses the gate: Level is only its accent, and it ignores the key going up, so
+  speech's words) bypasses the gate: Level is only its accent, and it ignores the key going up (but
+  the chiptune, whose release closes it as the gate would), so
   the string and the modal ring as long as Morph says (from about 0.7 to the 30 s guard) unless a
   slot damps them (Envelope 1 into Morph). A Follow envelope whose input stays above zero after
   the note (Key above middle C) never rests, and the voice then never idles, guard or not: take
