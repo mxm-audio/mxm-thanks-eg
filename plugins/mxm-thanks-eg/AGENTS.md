@@ -111,7 +111,7 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
   fails when they differ. At least fifty (`the_set_is_at_least_fifty_sounds`), each with its
   category, every engine with one (`every_engine_and_bank_has_a_sound`), names short, sentence case
   and the set's own (`every_name_is_its_own_short_and_in_sentence_case`); the order a first
-  impression, then `Category::ALL`'s. **Their listening is owed (T4).**
+  impression, then `Category::ALL`'s. **The owner heard them (2026-11-05)**: a change to a sound is the owner's to hear.
 - **The set's levels are `tests/factory_levels.rs`**: each file loaded as a host loads it, played
   as its category is (at 120 bpm), its BS.1770 momentary loudness at its loudest within `WINDOW_LU`
   of the set's median, no sample past full scale, and silent within `ENDS_WITHIN` of its key going

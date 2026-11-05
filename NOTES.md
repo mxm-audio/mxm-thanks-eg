@@ -83,9 +83,10 @@ instrument's sixteen slots.
   own (two pages); a window installs the fonts before its first frame. `tree_pictures` clears that
   plan in its setup, so the pictures show what a window opens on.
 
-## The instrument's choices, for the owner to hear (T5)
+## The instrument's choices, heard (T5)
 
-Where the plan left a choice open, T3 made one; each is the owner's to keep or change by ear.
+Where the plan left a choice open, T3 made one, for the owner to keep or change by ear; they
+heard the instrument and kept them (2026-11-05: *"Thanks EG sounded fine"*).
 
 - **The envelopes' Response curve** is `(e^(6r·x) − 1) / (e^(6r) − 1)`, *r* the Response from −1 to
   +1: linear at 0, and it does not change the times. Times run 0.5 ms to 30 s on each knob.
@@ -106,7 +107,7 @@ Where the plan left a choice open, T3 made one; each is the owner's to keep or c
 
 The plan's T5 freeze (*"the 101 ids, the values of the source and target lists and of Model, every
 range and default"*), on the owner's word (*"Do that"*, 2026-11-05, after MXM Modal Synth's), ahead
-of their listening: a sound can still change, a parameter cannot. MXM Modal Synth's `NOTES.md` has
+of their listening, which followed: a sound can still change, a parameter cannot. MXM Modal Synth's `NOTES.md` has
 the reasoning, the same here: a saved state stores plain values and a list's ids, a preset and
 VST3 automation the travel and a list's index over its length, so ids, kinds, ranges, skews,
 defaults and every list's order and length are frozen, and **no list may grow**.
@@ -143,7 +144,8 @@ written once by the ignored `write_the_frozen_state`).
   25.6 Hz), as the collection's one sync button does everywhere.
 - **The factory sounds leave Volume alone** (`factory_content_does_not_move_volume`, as three
   other instruments hold): each is levelled inside its own design, momentary loudness within
-  5 LU of the set's median (`tests/factory_levels.rs`). None has been heard yet.
+  5 LU of the set's median (`tests/factory_levels.rs`). The owner heard them (2026-11-05:
+  *"Thanks EG sounded fine"*).
 - **Copies the kit could hold**: the time reading is a second copy of mxm-mono-pr1's, the route
   slots a third copy of the drums' shape. Moving either into mxm-kit needs the owner's word to
   push it. The rate converter moved there (`mxm_dsp::rate_converter`), shared with MXM Modal Synth
