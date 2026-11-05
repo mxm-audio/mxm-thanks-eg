@@ -13,9 +13,10 @@ ported to Rust from Emilie Gillet's MIT code and named as a tribute to her (the 
 generators after Make Noise's MATHS too; three LFOs; sixteen route slots; 101 parameters.
 
 Pre-alpha: T0 to T4 are done (2026-11-04): the port, all 24 engines and all 220 cases bit for bit;
-the instrument; the editor, the factory sounds, the control map and the host tests. T5 is the
-owner's: listening, then the freeze. Private until it is ready; after version 1.0 of the MXM
-collection.
+the instrument; the editor, the factory sounds, the control map and the host tests. T5's freeze is
+done (2026-11-05, on the owner's word): the parameters are permanent. **Owed**: the owner's
+listening, which may change the sounds, never the parameters. Private until it is ready; after
+version 1.0 of the MXM collection.
 
 # Ownership
 

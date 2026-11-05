@@ -102,6 +102,19 @@ Where the plan left a choice open, T3 made one; each is the owner's to keep or c
   silent block, failed three ways: zero crossings in quiet tails, the six-op engines' never-silent
   residue, and the particle engine's gaps while its gate is open.
 
+## The freeze (T5, 2026-11-05)
+
+The plan's T5 freeze (*"the 101 ids, the values of the source and target lists and of Model, every
+range and default"*), on the owner's word (*"Do that"*, 2026-11-05, after MXM Modal Synth's), ahead
+of their listening: a sound can still change, a parameter cannot. MXM Modal Synth's `NOTES.md` has
+the reasoning, the same here: a saved state stores plain values and a list's ids, a preset and
+VST3 automation the travel and a list's index over its length, so ids, kinds, ranges, skews,
+defaults and every list's order and length are frozen, and **no list may grow**.
+`frozen-parameters.txt` holds a range as the plain value at five points of its travel; Model's
+24 values are the engines in Plaits' order, which mxm-macro-osc's cases hold. The host tests open
+the state saved at the freeze with every parameter moved (`tests/fixtures/frozen-2026-11-05.*`,
+written once by the ignored `write_the_frozen_state`).
+
 ## Open points
 
 - **`‹ modulate ›` offers pairs the standard refuses** (a gesture into a Cycle or Trigger gate, Key or
@@ -118,7 +131,7 @@ Where the plan left a choice open, T3 made one; each is the owner's to keep or c
 - **A shared LFO's Rate** (Retrigger off) can only follow shared sources: Wheel, Pressure, Bend and
   the other shared LFOs.
 - **"Env n input"** names the Follow mode's target as the plan and the DSP do, though the
-  conventions say a target is never called *Input*: for the freeze (T5).
+  conventions say a target is never called *Input*. A name, so free to change after the freeze.
 - **The string and modal engines ignore the key going up**, as on the module: Morph alone sets
   how long they ring, and from about 0.7 only the instrument's 30 s guard ends them. The factory
   plucks use an envelope into Morph as a damper.

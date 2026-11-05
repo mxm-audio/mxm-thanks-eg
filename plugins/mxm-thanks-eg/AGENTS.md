@@ -11,8 +11,8 @@ the design.
 
 # Ownership
 
-`Cargo.toml`, `control-map.json`, `presets/`, `tests/` (the factory set's levels), `host-tests/`
-(the slow tier) and `src/`: `lib.rs` (identity, the `Plugin` impl, events, `process`), `params.rs`
+`Cargo.toml`, `control-map.json`, `frozen-parameters.txt` (the freeze), `presets/`, `tests/` (the
+factory set's levels), `host-tests/` (the slow tier) and `src/`: `lib.rs` (identity, the `Plugin` impl, events, `process`), `params.rs`
 (the voice's 17, the envelopes' and LFOs' nested parameters, the `Settings` fill), `routes.rs`
 (the sixteen slots and their lists), `preset.rs` (`mxm_preset::Instrument` and the factory design),
 `telemetry.rs` (the atomics the editor reads), and the editor: `editor.rs` (the window, the app
@@ -34,9 +34,14 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
   `model frequency fine harmonics timbre morph fm_amount timbre_amount morph_amount decay colour
   aux spread mode glide bend_range volume`; `env<n>_{attack,decay,sustain,release,response,cycle,mode}`
   and `lfo<n>_{rate,shape,sync,retrigger,fade}`, `n` 1–3, nested by `id_prefix`;
-  `route<r>_{source,target,amount}`, `r` 1–16. **Provisional until the gate (T5)**, then permanent,
-  with the order of every list a state stores: Model's engines (`params::ENGINE_NAMES`), the voice
-  and envelope modes, the LFO shapes, the slots' sources and targets.
+  `route<r>_{source,target,amount}`, `r` 1–16. **Frozen since T5** (2026-11-05): every id, kind,
+  range and default, and every list's values in order (Model's engines, `params::ENGINE_NAMES`;
+  the voice and envelope modes, the LFO shapes, the slots' sources and targets), as
+  `frozen-parameters.txt` holds them (`the_parameters_are_the_frozen_tables`). A line never
+  changes, no id is removed or reused, and **no list grows**: a preset stores a value as its index
+  over the list's length. A new parameter is appended. The host tests' `state.rs` takes every
+  parameter through CLAP state and opens the state saved at the freeze (`tests/fixtures/`, written
+  once). [NOTES.md § The freeze](../../NOTES.md#the-freeze-t5-2026-11-05)
 - **The slots' lists are the DSP's**: `Off`, then `Source::ALL` or `Target::ALL` in order.
   `routes::SourceChoice` and `TargetChoice` carry the DSP's value and implement nice-plug's `Enum` by
   hand, their names from an exhaustive match, so a DSP addition fails to compile until named.
@@ -46,7 +51,7 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
   *Pitch from decay*, *Timbre from decay*, *Morph from decay*; the gate's two *Gate decay* and
   *Colour*, as their targets are named. *Env n input* is the plan's and the DSP's word for what
   Follow follows, which the conventions' *Declaring the target list* names as one to avoid: the
-  owner's to settle at T5.
+  owner's to settle. A name is free to change; the freeze holds its id (`env<n>_input`).
 - **Readings**: `mxm_params::text` where it has one; Model reads the engine's name, Frequency and
   Fine signed semitones, Volume (stored linear) decibels, a Rate hertz (a typed division picks its
   position), times by `params::time_text` (tenths of a millisecond, then hundredths of a second),
