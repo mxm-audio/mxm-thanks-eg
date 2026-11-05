@@ -103,6 +103,17 @@ heard the instrument and kept them (2026-11-05: *"Thanks EG sounded fine"*).
   silent block, failed three ways: zero crossings in quiet tails, the six-op engines' never-silent
   residue, and the particle engine's gaps while its gate is open.
 
+## In Bitwig (T4, 2026-11-05)
+
+Run through Bitwig's controller API (the Control Deck bridge), on the bundles `cargo xtask bundle`
+installed: Bitwig lists MXM Thanks EG as a CLAP and a VST3 from the system folders; each format loads on
+a track of its own at Init with all 101 parameters, and its editor opens as it is inserted; a
+clip of single notes and a held chord sounds on both (the tracks' meters, every other track
+silent); Model set from the host reads back in the plugin's own words (*Hi-hat*); and once the
+transport stops every track falls to silence, no voice left sounding. Not run there: a project
+saved and opened (the host tests' `state.rs` takes every parameter through CLAP state) and the
+preset browser.
+
 ## The freeze (T5, 2026-11-05)
 
 The plan's T5 freeze (*"the 101 ids, the values of the source and target lists and of Model, every
