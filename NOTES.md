@@ -59,6 +59,10 @@ instrument's sixteen slots.
   Cycle, Trigger, Input) on its own card, an LFO's Rate on its own, the voice's on the cards that
   hold those controls; Level, Pan and Amplitude, which have no knob, on the gate's and the output's.
   A source is chosen there, never on a routing page of its own.
+- **`‹ modulate ›` from the keyboard** (the owner, 2026-11-05: "Fix it in the kit now", on Pi's
+  review of MXM Modal Synth): the picker is not a parameter, so the cursor could not reach it and a
+  first route needed the mouse. It is a stop with a key of its own (`route_rows::modulate_key`),
+  and the kit's selectors open their list on MENU (`a_route_is_added_from_the_keyboard`).
 - **Which free slot a choice takes.** The plan says the first free one; the drum machine takes one
   already aimed at the knob first. Both hold: a slot this target had (its source removed) is taken
   first, so a removed source added back finds its depth, as the remove's hover promises; otherwise

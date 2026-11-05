@@ -20,7 +20,7 @@ use mxm_ui::theme::Tokens;
 use nice_plug::prelude::*;
 
 use super::binding::{self, Bound, ErasedParam};
-use crate::routes::{ROUTE_IDS, RouteParams, Routes, SourceChoice, TargetChoice};
+use crate::routes::{ROUTE_IDS, RouteParams, Routes, SourceChoice, TargetChoice, target_id};
 
 /// What a target's line offers while a slot is free.
 pub const MODULATE: &str = "modulate";
@@ -29,6 +29,14 @@ pub const FULL: &str = "all 16 in use";
 
 /// What a target's line says on hover once every slot is in use.
 const FULL_DESCRIPTION: &str = "All sixteen routes are in use. Remove one to add another here.";
+
+/// **`‹ modulate ›`'s stop for the keyboard cursor**: not a parameter, it acts on one (the free slot
+/// it takes), so it has a key of its own, named for its target (`mxm_ui::navigation::at`). MENU
+/// opens its list, ↑ ↓ and Enter pick; VALUE and an arrow take the first source.
+#[must_use]
+pub fn modulate_key(target: Target) -> String {
+    format!("modulate {}", target_id(target))
+}
 
 /// A target's index in the DSP's list, which keys its routes' leaf.
 #[must_use]
@@ -249,17 +257,19 @@ fn line(
         .collect();
     let mut chosen = 0usize;
     let description = format!("Adds a modulation source to {name}.");
-    let changed = control::selector_named(
-        ui,
-        tokens,
-        panel,
-        name,
-        &labels,
-        &mut chosen,
-        None,
-        Some(0),
-        &description,
-    );
+    let changed = mxm_ui::navigation::at(ui, &modulate_key(target), |ui| {
+        control::selector_named(
+            ui,
+            tokens,
+            panel,
+            name,
+            &labels,
+            &mut chosen,
+            None,
+            Some(0),
+            &description,
+        )
+    });
     if changed && chosen > 0 {
         add(routes, target, offered[chosen - 1], setter);
     }

@@ -186,7 +186,7 @@ fn every_slot_on(params: &ThanksEgParams, target: Target) {
 /// Every id the keyboard may reach: the parameters, but a slot's target, which the card it sits
 /// on is, and which adding the route writes.
 fn reachable_ids(params: &ThanksEgParams, with_routes: bool) -> Vec<&'static str> {
-    params
+    let mut ids: Vec<&'static str> = params
         .all_parameters()
         .into_iter()
         .map(|(id, _)| id)
@@ -198,7 +198,14 @@ fn reachable_ids(params: &ThanksEgParams, with_routes: bool) -> Vec<&'static str
                 true
             }
         })
-        .collect()
+        .collect();
+    // Every target's `‹ modulate ›` while it offers a source, and none once the slots are full.
+    for target in Target::ALL {
+        if !route_rows::offered(&params.routes, target).is_empty() {
+            ids.push(Box::leak(route_rows::modulate_key(target).into_boxed_str()));
+        }
+    }
+    ids
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1186,6 +1193,54 @@ fn a_switch_a_toggle_a_knob_and_volume_each_emit_one_balanced_gesture() {
     }
     harness.run_steps(2);
     host.assert_gesture("Volume");
+}
+
+/// **A route is added from the keyboard**: the cursor on a target's `‹ modulate ›`, MENU opens its
+/// list, ↓ and Enter pick its first source, and the free slot is written in one gesture, as a click
+/// on the row would write it.
+#[test]
+fn a_route_is_added_from_the_keyboard() {
+    let params = Arc::new(ThanksEgParams::default());
+    let telemetry = Arc::new(Telemetry::default());
+    let host = Arc::new(ApplyingHost::default());
+    let mut harness = editor_harness(
+        Arc::clone(&params),
+        telemetry,
+        Arc::clone(&host),
+        reference(),
+    );
+    harness.run_steps(3);
+    // `‹ modulate ›` on Envelope 1's Rise line.
+    harness
+        .get(
+            By::new()
+                .label("Env 1 rise: modulate")
+                .role(egui::accesskit::Role::ComboBox),
+        )
+        .focus();
+    harness.run_steps(2);
+    harness.key_press(key_of(keyboard_checks::MENU));
+    harness.run_steps(3);
+    harness.key_press(egui::Key::ArrowDown);
+    harness.run_steps(2);
+    harness.key_press(egui::Key::Enter);
+    harness.run_steps(3);
+    let first = route_rows::offered(&ThanksEgParams::default().routes, Target::Envelope1Rise)[0];
+    assert_eq!(
+        params.routes.route1.source.value(),
+        SourceChoice(Some(first))
+    );
+    assert_eq!(
+        params.routes.route1.target.value(),
+        TargetChoice(Some(Target::Envelope1Rise))
+    );
+    // One gesture: both opened before the first value and closed after the last.
+    let names = ["Route 1 source", "Route 1 target"];
+    let expected: Vec<(&str, String)> = ["begin", "set", "end"]
+        .into_iter()
+        .flat_map(|action| names.map(|name| (action, name.to_owned())))
+        .collect();
+    assert_eq!(host.calls(), expected);
 }
 
 /// **A route row's remove is one write**: the source off, the target and the depth kept.

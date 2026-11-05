@@ -111,7 +111,7 @@ const fn target_name(target: Target) -> &'static str {
 }
 
 /// A target's stable id, which a saved state stores.
-const fn target_id(target: Target) -> &'static str {
+pub(crate) const fn target_id(target: Target) -> &'static str {
     match target {
         Target::Pitch => "pitch",
         Target::Harmonics => "harmonics",

@@ -134,7 +134,9 @@ every parameter's binding), `editor/route_rows.rs` (the slots as rows), `editor/
   `Routes::first_free`, a depth left from another target zeroed (`route_rows::add`). A row is the
   amount, painted as its source, and a remove that switches the source off, one write
   (`route_rows::remove`). **A slot not in use is on no card.** With all sixteen in use every line
-  reads `route_rows::FULL`, disabled, and offers nothing.
+  reads `route_rows::FULL`, disabled, and offers nothing. **`‹ modulate ›` is a cursor stop** under
+  a key of its own (`route_rows::modulate_key`, `mxm_ui::navigation::at`): MENU opens its list,
+  ↑ ↓ and Enter pick; the cursor's coverage lists it while it offers a source.
 - **The engine picker** is the caret selector grouped by bank (`selector_grouped`); its hover says
   what the chosen engine sounds like (`cards::engine_sound`), in the player's words.
 - **It opens on one page with every card**: `REFERENCE` is the budget hugged
