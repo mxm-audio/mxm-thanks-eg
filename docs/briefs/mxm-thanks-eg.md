@@ -2,7 +2,7 @@
 
 Required by mxm-kit's [`MXM_DESIGN_SYSTEM.md`](https://github.com/mxm-audio/mxm-kit/blob/main/docs/MXM_DESIGN_SYSTEM.md)
 §14. The instrument plays the 24 engines of a published macro-oscillator module, ported to Rust
-from its maker's MIT code and held bit for bit to it (`crates/mxm-thanks-eg-engines`), with
+from its maker's MIT code and held bit for bit to it (`mxm-macro-osc`), with
 envelopes, LFOs and route slots around them (`crates/mxm-thanks-eg-dsp`). The design is ops'
 `plans/plan-mxm-thanks-eg.md` §5; the interface is not a copy of the module's panel.
 

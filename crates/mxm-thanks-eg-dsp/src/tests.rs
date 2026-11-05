@@ -1,7 +1,7 @@
 //! The instrument's tests, through its interface and, where a test needs to see inside a block,
 //! the voices' own state.
 
-use mxm_thanks_eg_engines::{Frame, Modulations, Patch, Voice as Engine};
+use mxm_macro_osc::{Frame, Modulations, Patch, Voice as Engine};
 
 use crate::voice::{BLOCK, Mix};
 use crate::{

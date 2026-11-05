@@ -1,4 +1,4 @@
-//! One of the instrument's voices: an engine voice (the module, `mxm_thanks_eg_engines::Voice`)
+//! One of the instrument's voices: an engine voice (the module, `mxm_macro_osc::Voice`)
 //! with the case around it: the note, glide and tuning on V/OCT, the gate on TRIG, three
 //! envelopes, three LFOs (or the shared ones), the slots' targets, and the mix of OUT and AUX.
 //!
@@ -7,9 +7,9 @@
 //! render, and last the engine's own decay envelope as the *Decay* source, which every reader so
 //! reads one block late.
 
+use mxm_macro_osc::dsp::K_BLOCK_SIZE;
+use mxm_macro_osc::{Frame as EngineFrame, Modulations, Patch, Voice as Engine};
 use mxm_modulation::standard;
-use mxm_thanks_eg_engines::dsp::K_BLOCK_SIZE;
-use mxm_thanks_eg_engines::{Frame as EngineFrame, Modulations, Patch, Voice as Engine};
 
 use crate::envelope::{Envelope, Inputs};
 use crate::lfo::{Fade, Lfo};

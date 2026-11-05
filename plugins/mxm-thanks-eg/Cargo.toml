@@ -19,7 +19,7 @@ crate-type = ["cdylib", "lib"]
 # in its `src/lib.rs`.
 mxm-thanks-eg-dsp.workspace = true
 # `vst3` exports the VST3 as well as the CLAP. `unsafe_flush_denormals` sets flush-to-zero around
-# `process`, as the engines' reference was rendered (crates/mxm-thanks-eg-engines/AGENTS.md).
+# `process`, as the engines' reference was rendered (mxm-macro-osc's AGENTS.md).
 nice-plug = { workspace = true, features = ["vst3", "unsafe_flush_denormals"] }
 # `ErasedParam` for the preset system, and the collection's value text.
 mxm-params.workspace = true

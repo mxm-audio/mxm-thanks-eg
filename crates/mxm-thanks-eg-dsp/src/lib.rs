@@ -1,4 +1,4 @@
-//! MXM Thanks EG's instrument: eight voices of the ported engines (`mxm-thanks-eg-engines`), each
+//! MXM Thanks EG's instrument: eight voices of the ported engines (`mxm-macro-osc`), each
 //! with its envelopes and LFOs, the sixteen route slots, the voices' mix, and the resampler from the
 //! engines' 48 kHz to the host's rate. Framework-free: plain values in, samples out.
 //!

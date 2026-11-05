@@ -10,7 +10,7 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
-mxm-thanks-eg-engines.workspace = true
+mxm-macro-osc.workspace = true
 mxm-modulation.workspace = true
 
 [dev-dependencies]

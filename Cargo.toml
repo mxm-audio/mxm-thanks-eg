@@ -1,7 +1,6 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/mxm-thanks-eg-engines",
     "crates/mxm-thanks-eg-dsp",
     "plugins/mxm-thanks-eg",
     "plugins/mxm-thanks-eg/host-tests",
@@ -10,7 +9,6 @@ members = [
 # The fast tier: `cargo build` and `cargo test` here never build MXM Player; `cargo test
 # --workspace` adds the host tests (the slow tier).
 default-members = [
-    "crates/mxm-thanks-eg-engines",
     "crates/mxm-thanks-eg-dsp",
     "plugins/mxm-thanks-eg",
     "xtask",
@@ -25,12 +23,12 @@ authors = ["mxm"]
 repository = "https://github.com/mxm-audio/mxm-thanks-eg"
 
 [workspace.dependencies]
-# Pinned exactly, as in every MXM repository; Cargo.lock is committed. Own crates by path, the
-# kit's and the player's from their `main`, locked.
-bytemuck = { version = "=1.25.2", default-features = false }
+# Pinned exactly, as in every MXM repository; Cargo.lock is committed. Own crates by path; the
+# kit's, the player's and the port's (mxm-macro-osc) from their `main`, locked.
 egui = "=0.36.1"
 mxm-control-map = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-editor = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
+mxm-macro-osc = { git = "https://github.com/mxm-audio/mxm-macro-osc", branch = "main" }
 mxm-measure = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-modulation = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-modulation-params = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
@@ -43,12 +41,10 @@ mxm-rng = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-telemetry = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-tempo = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-thanks-eg-dsp = { path = "crates/mxm-thanks-eg-dsp" }
-mxm-thanks-eg-engines = { path = "crates/mxm-thanks-eg-engines" }
 mxm-ui = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 mxm-xtask = { git = "https://github.com/mxm-audio/mxm-kit", branch = "main" }
 nice-plug = { version = "=0.4.2", default-features = false, features = ["editor", "assert_process_allocs"] }
 nice-plug-egui = { version = "=0.5.1", default-features = false, features = ["opengl"] }
-sha2 = "=0.10.9"
 
 [profile.release]
 lto = "thin"
@@ -56,7 +52,7 @@ strip = "symbols"
 
 # The engines are tested bit for bit, so their tests run optimised: a debug build of the same
 # arithmetic gives the same bits (no fast-math anywhere), only slower.
-[profile.dev.package.mxm-thanks-eg-engines]
+[profile.dev.package.mxm-macro-osc]
 opt-level = 3
 
 # nice-plug, egui-baseview and nice-plug-egui as published, plus the patches in each fork's

@@ -39,6 +39,12 @@ MATHS it was designed from, is ops' `plans/plan-mxm-thanks-eg.md`; Pi reviewed i
   from `libm`, so its bits are not the C++'s; run every voice at 48 kHz in blocks of 12, as the
   module, and resample, because the engines' constants and tables are written for 48 kHz; after
   version 1.0 of the collection.
+- **2026-11-05: The port, its own public repository.** *"We have converted plaits to rust. So we
+  might as well release that as its own repo, no?"*, then *"since it is done we might as well make
+  it public. And in the readme emphasize that it is bit identical to the original"*. The engines'
+  crate became `mxm-audio/mxm-macro-osc`, with its history; this repository takes it by its
+  `main`, locked. MIT, as the code it is ported from: as GPL, most users would take the `libm`
+  port instead. "Plaits" stays out of its name, as out of this product's.
 
 ## The editor
 

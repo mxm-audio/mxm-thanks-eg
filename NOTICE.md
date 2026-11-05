@@ -8,7 +8,8 @@ are not covered by that licence; see `TRADEMARKS.md`.
 
 **Its engines are ported from Emilie Gillet's code for Mutable Instruments Plaits**
 (`plaits/` in [pichenettes/eurorack](https://github.com/pichenettes/eurorack)) and the parts of
-[pichenettes/stmlib](https://github.com/pichenettes/stmlib) it uses, under the MIT licence below.
+[pichenettes/stmlib](https://github.com/pichenettes/stmlib) it uses, under the MIT licence below;
+the port is [mxm-macro-osc](https://github.com/mxm-audio/mxm-macro-osc) (MIT).
 Each ported file keeps the copyright line of the file it was ported from. Mutable Instruments is a
 registered trademark; it names the original here and nowhere in the product, and Emilie Gillet has
 no part in this product and does not endorse it.
@@ -51,5 +52,5 @@ THE SOFTWARE.
 
 ## Third-party code in its builds
 
-Named here when the plugin is built: mxm-kit (MIT), nice-plug (ISC), egui and its dependencies, the
+Named here when the plugin is built: mxm-macro-osc (MIT), mxm-kit (MIT), nice-plug (ISC), egui and its dependencies, the
 VST3 bindings, as every MXM plugin's notice names them.

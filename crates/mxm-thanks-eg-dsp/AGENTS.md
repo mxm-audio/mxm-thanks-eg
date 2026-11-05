@@ -5,7 +5,7 @@ Parent: [`../../AGENTS.md`](../../AGENTS.md)
 # Purpose
 
 The instrument around the ported engines: eight voices, each a Plaits voice
-(`mxm_thanks_eg_engines::Voice`) with three envelopes and three LFOs; the sixteen route slots on
+(`mxm_macro_osc::Voice`) with three envelopes and three LFOs; the sixteen route slots on
 the collection's routing (`mxm-modulation`); the voices' mix; and the resampler from 48 kHz to the
 host's rate. Framework-free, no file IO; nothing allocated after `Instrument::new` and
 `set_sample_rate`. The design is ops' `plans/plan-mxm-thanks-eg.md` §3 and §5; the MATHS behaviour
@@ -137,12 +137,12 @@ library; `tests/realtime.rs` counts allocations with its own allocator.
 
 # Work Guidance
 
-- The engines are held bit for bit (their crate); this crate is not, and is tested as the
+- The engines are held bit for bit (mxm-macro-osc); this crate is not, and is tested as the
   collection's instruments are. Its one link to the engines' reference is
   `one_voice_at_48_khz_is_the_engine_voice_exactly`.
 - The engine voice's accessors for this crate (`init`, `clear`, `decay_envelope`,
-  `low_pass_gate_gain`) are listed in the engines' `AGENTS.md`; add one only when nothing here
-  can know it.
+  `low_pass_gate_gain`) are listed in mxm-macro-osc's `AGENTS.md`; add one there only when
+  nothing here can know it.
 
 # Verification
 

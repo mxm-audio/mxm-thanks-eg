@@ -2423,6 +2423,14 @@ version = "0.4.1"
 source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
 
 [[package]]
+name = "mxm-macro-osc"
+version = "0.1.0"
+source = "git+https://github.com/mxm-audio/mxm-macro-osc?branch=main#b4e4f41b25c1bbbba938e82a7f1aac9f23c03ba5"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "mxm-measure"
 version = "0.4.1"
 source = "git+https://github.com/mxm-audio/mxm-kit?branch=main#290a0fc9fa8e6a26a02380ffcf211ac8da9dde0c"
@@ -2569,17 +2577,9 @@ dependencies = [
 name = "mxm-thanks-eg-dsp"
 version = "0.1.0"
 dependencies = [
+ "mxm-macro-osc",
  "mxm-measure",
  "mxm-modulation",
- "mxm-thanks-eg-engines",
-]
-
-[[package]]
-name = "mxm-thanks-eg-engines"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "sha2",
 ]
 
 [[package]]
