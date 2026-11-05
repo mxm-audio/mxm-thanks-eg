@@ -104,6 +104,10 @@ Where the plan left a choice open, T3 made one; each is the owner's to keep or c
 
 ## Open points
 
+- **`‹ modulate ›` offers pairs the standard refuses** (a gesture into a Cycle or Trigger gate, Key or
+  Random into Level), which take a slot and move nothing; MXM Modal Synth leaves them out
+  (`Target::offer`). Waived, as in mxm-drum-machine (the owner, 2026-11-05: "waive it, same as the
+  drum machine").
 - **The chiptune engine drones after release** with its Timbre attenuverter at noon, as the module
   does, and no slot can close it; the instrument fades a released note out 30 s after its key went
   up. A guard, not a design: the owner rules what it should be.
