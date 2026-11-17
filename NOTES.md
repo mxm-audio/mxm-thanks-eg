@@ -37,8 +37,7 @@ MATHS it was designed from, is ops' `plans/plan-mxm-thanks-eg.md`; Pi reviewed i
 - **2026-11-04: Our own port, at the module's rate.** The plan's other recommendations, which the
   owner agreed: port from the C++ rather than fork `sourcebox/mi-plaits-dsp-rs`, whose maths come
   from `libm`, so its bits are not the C++'s; run every voice at 48 kHz in blocks of 12, as the
-  module, and resample, because the engines' constants and tables are written for 48 kHz; after
-  version 1.0 of the collection.
+  module, and resample, because the engines' constants and tables are written for 48 kHz.
 - **2026-11-05: The port, its own public repository.** *"We have converted plaits to rust. So we
   might as well release that as its own repo, no?"*, then *"since it is done we might as well make
   it public. And in the readme emphasize that it is bit identical to the original"*. The engines'
@@ -51,6 +50,8 @@ MATHS it was designed from, is ops' `plans/plan-mxm-thanks-eg.md`; Pi reviewed i
   Follow mode's target reads *Env n follow*, its id `env<n>_input` as frozen; the time reading
   moved into the kit, `mxm_params::text::tenths_of_milliseconds_then_seconds`, mxm-mono-pr1's
   and MXM Modal Synth's copies with it.
+- **2026-11-17: In version 1.0.** Asked which of the instruments begun since 2026-11-02 are in
+  version 1.0 of the collection: *"mxm-twf-synth is not ready yet. The rest are."*
 
 ## The editor
 
