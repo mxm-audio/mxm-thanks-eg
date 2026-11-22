@@ -15,8 +15,8 @@ generators after Make Noise's MATHS too; three LFOs; sixteen route slots; 101 pa
 Pre-alpha: T0 to T4 are done (2026-11-04): the port, all 24 engines and all 220 cases bit for bit;
 the instrument; the editor, the factory sounds, the control map and the host tests. T5 is done
 (2026-11-05): the parameters are frozen and permanent, and the owner heard the instrument and its
-sounds (*"Thanks EG sounded fine"*). Private until it is ready; in
-version 1.0 of the MXM collection (the owner, 2026-11-17).
+sounds (*"Thanks EG sounded fine"*). In version 1.0 of the MXM collection (the owner,
+2026-11-17), and public since 2026-11-22, out to the beta testers (the owner: *"If they are out in beta, their repos should also be published"*).
 
 # Ownership
 

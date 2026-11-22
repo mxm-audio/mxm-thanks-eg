@@ -12,7 +12,7 @@ targets; fifty-two factory sounds. The engines are held bit for bit to the code 
 from; the port is its own crate, [mxm-macro-osc](https://github.com/mxm-audio/mxm-macro-osc)
 (MIT). `cargo xtask bundle mxm-thanks-eg --release` builds and installs the CLAP and VST3.
 
-Pre-alpha: nothing is released, and the repository is private until it is ready.
+Pre-alpha: nothing is released yet.
 
 ## Licence
 
